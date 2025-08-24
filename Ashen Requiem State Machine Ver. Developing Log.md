@@ -2175,6 +2175,8 @@ if(igniteDamageTimer < 0 && isIgnited)
 
 实现该部分需要运用一个十分重要的部分：Shader
 
+用闪烁简易实现
+
 ### 血条UI
 
 ![image-20250428112659741](Ashen Requiem State Machine Ver. Developing Log.assets/image-20250428112659741.png)

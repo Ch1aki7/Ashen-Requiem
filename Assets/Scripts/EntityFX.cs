@@ -9,10 +9,15 @@ public class EntityFX : MonoBehaviour
     [SerializeField] private Material hitMat;
     private Material originalMat;
 
+    [Header("Element Colors")]
+    [SerializeField] private Color chillvfx = Color.cyan;
+    private Color originalHitVfxColor;
+
     private void Start()
     {
         sr = GetComponentInChildren<SpriteRenderer>();
         originalMat = sr.material;
+        originalHitVfxColor = Color.white;
     }
 
     private IEnumerator FlashFX()
