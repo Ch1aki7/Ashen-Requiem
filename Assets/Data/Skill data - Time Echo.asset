@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e9a304ffe5dd394c9cb73707c171ef2, type: 3}
+  m_Name: Skill data - Time Echo
+  m_EditorClassIdentifier: Assembly-CSharp::SkillDataSO
+  cost: 1
+  displayName: "\u56DE\u58F0\u5BA4"
+  description: "\u6211\u80FD\u770B\u89C1\u672A\u6765\u672A\u6765\u672A\u6765\r\nI
+    can see see the future future future"
+  icon: {fileID: -1351563598, guid: be55291aae08d434db3da3b59db3ab4a, type: 3}

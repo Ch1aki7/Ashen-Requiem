@@ -1898,6 +1898,449 @@ public void ExitBlackhole()
 
 为前两帧加上动画事件AttackTrigger
 
+### 技能树UI建立
+
+Hierarchy下新建Canvas，并更改缩放模式为根据屏幕大小，该步骤是为了使得其在不同分辨率下的大小不会发生变化
+
+新建子对象UI_TreeNode，子对象新建两个UI Image，一个命名Background，另一个是图标本身
+
+![image-20260318115325398](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260318115325398.png)
+
+接下来使得该节点可交互，这就需要检测鼠标，显示信息和点击解锁
+
+新建UI文件夹Script：UI_TreeNode，将脚本拖到对象上
+
+头加入
+
+```
+using UnityEngine.EventSystems;
+
+public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
+```
+
+alt+enter可快速添加
+
+```
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        throw new System.NotImplementedException();
+    }
+```
+
+|          接口          |             核心作用             |           必须实现的方法           |                    触发场景                    |
+| :--------------------: | :------------------------------: | :--------------------------------: | :--------------------------------------------: |
+| `IPointerEnterHandler` |   监听「指针进入 UI 元素」事件   | `OnPointerEnter(PointerEventData)` |   鼠标光标 / 手指触摸进入该 UI 节点的范围时    |
+| `IPointerExitHandler`  |   监听「指针离开 UI 元素」事件   | `OnPointerExit(PointerEventData)`  |   鼠标光标 / 手指触摸离开该 UI 节点的范围时    |
+| `IPointerDownHandler`  | 监听「指针在 UI 元素上按下」事件 | `OnPointerDown(PointerEventData)`  | 鼠标左键 / 右键 / 中键（或触摸按下）在该节点上 |
+
+这里测试交互，如果节点有两个对象会冲突，可以禁用Background的Raycast Target
+
+![image-20260318120613835](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260318120613835.png)
+
+设置调试选项
+
+```
+    [SerializeField] private Image skillIcon;
+    [SerializeField] private Color skillLockedColor;
+    public bool isUnlocked;
+    public bool isLocked;
+
+    private void Awake()
+    {
+        UpdateIconColor(skillLockedColor);
+    }
+
+    private void Unlock()
+    {
+        isUnlocked = true;
+
+        UpdateIconColor(Color.white);
+    }
+
+    private bool CanBeUnlocked()
+    {
+        if(isUnlocked||isLocked)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void UpdateIconColor(Color color)
+    {
+        if (skillIcon == null)
+            return;
+
+        skillIcon.color = color;
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (CanBeUnlocked())
+        {
+            Unlock();
+        }
+        else
+            Debug.Log("解锁不能");
+    }
+```
+
+记得设置节点透明度为255，不然会消失，点击后才出现
+
+hover显示信息+悬浮
+
+新建Assets/Scripts/Skills/SkillSystem/SkillDataSO.cs
+
+ScriptableObject简介
+
+感觉上类似prefab，可以创建一个模板
+
+```
+using UnityEngine;
+
+[CreateAssetMenu(menuName = "RPG Setup/Skill Data", fileName = "Skill data - ")]
+public class SkillDataSO : ScriptableObject
+{
+    public int cost;
+
+    [Header("Skill description")]
+    public string displayName;
+    [TextArea]
+    public string description;
+    public Sprite icon;
+}
+
+```
+
+完成后在树节点脚本加上
+
+```
+[SerializeField] private SkillDataSO skillData;
+```
+
+```
+    private void OnValidate()
+    {
+        if (skillData == null)
+            return;
+
+        skillName = skillData.displayName;
+        skillIcon.sprite = skillData.icon;
+        gameObject.name = "UI_TreeNode - " + skillData.displayName;
+    }
+```
+
+现在，只需要先在data里预制后再在树节点应用即可
+
+Sprite处理，绿框代表拉伸范围，并将图片类型设为Sliced
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260318140549669.png" alt="image-20260318140549669" style="zoom:50%;" />
+
+shift+alt使得父子对象大小一致且同步改变，这使得改变父大小时可同时改变子大小
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260318141243464.png" alt="image-20260318141243464" style="zoom:67%;" />
+
+新建脚本UI_ToolTip
+
+```
+using UnityEngine;
+
+public class UI_ToolTip : MonoBehaviour
+{
+    private RectTransform rect;
+
+    private void Awake()
+    {
+        rect = GetComponent<RectTransform>();
+    }
+
+    public void ShowToolTip(bool show,RectTransform targetRect)
+    {
+        if(!show)
+        {
+            rect.position = new Vector2(9999, 9999);
+            return;
+        }
+
+        UpdatePosition(targetRect);
+    }
+    public void UpdatePosition(RectTransform targetRect)
+    {
+        rect.position = targetRect.position;
+    }
+}
+
+```
+
+因为 SetActive 会导致 Unity 重新计算整个 Canvas 的网格（Canvas Rebuild），非常消耗性能。移出屏幕法既能“隐藏”UI，又能避免性能消耗。
+
+为了使得子节点间互相访问，新建脚本UI，将其赋给Canvas节点(父)
+
+```
+using UnityEngine;
+
+public class UI : MonoBehaviour
+{
+    public UI_ToolTip skillToolTip;
+
+    private void Awake()
+    {
+        skillToolTip = GetComponentInChildren<UI_ToolTip>();
+    }
+}
+
+```
+
+之后在树节点声明并在awake()赋值
+
+```
+    private UI ui;
+    private RectTransform rect;
+```
+
+赋予脚本后debug发现，移动鼠标会导致提示信息闪烁，这是因为在提示浮在节点上方时，会挡住鼠标检测使得其在当前位置和(9999，9999)处瞬移，移除ToolTip对象的Raycast Target后正常
+
+#### 边界修复
+
+防止ui溢出边界
+
+**原理**：
+根据目标在屏幕上的位置，动态修改 ToolTip 的 Pivot（轴心点）。
+
+- 如果在屏幕左侧，Pivot 就靠左（0），ToolTip 向右延展。
+- 如果在屏幕右侧，Pivot 就靠右（1），ToolTip 向左延展。
+- 如果在屏幕顶部，Pivot 就靠上（1），ToolTip 向下延展。
+
+debug发现高分辨不适用，采用数学动态放缩
+
+```
+using UnityEngine;
+
+public class UI_ToolTip : MonoBehaviour
+{
+    private RectTransform rect;
+    [SerializeField] private Vector2 baseOffset = new Vector2(300, 100);
+
+    private void Awake()
+    {
+        rect = GetComponent<RectTransform>();
+    }
+
+    public void ShowToolTip(bool show, RectTransform targetRect)
+    {
+        if (!show)
+            rect.position = new Vector2(9999, 9999);
+        else
+            UpdatePosition(targetRect);
+    }
+
+    public void UpdatePosition(RectTransform targetRect)
+    {
+        float screenCenterX = Screen.width / 2f;
+        float screenCenterY = Screen.height / 2f;
+        Vector2 targetPosition = targetRect.position;
+
+        // 【核心代码】：根据屏幕宽高的比例动态放大偏移量
+        // 假设在 4K 屏幕 (3840宽) 下：3840 / 1920 = 2。X偏移量自动 * 2
+        float scaleX = Screen.width / 1920f;
+        float scaleY = Screen.height / 1080f;
+
+        Vector2 dynamicOffset = new Vector2(baseOffset.x * scaleX, baseOffset.y * scaleY);
+
+        targetPosition.x = targetPosition.x > screenCenterX ? targetPosition.x - dynamicOffset.x : targetPosition.x + dynamicOffset.x;
+        targetPosition.y = targetPosition.y > screenCenterY ? targetPosition.y - dynamicOffset.y : targetPosition.y + dynamicOffset.y;
+
+        rect.position = targetPosition;
+    }
+}
+```
+
+#### 文字填充
+
+使用 **TextMeshPro** 来显示文字
+
+新建组件并采用字体，准备好字体后在上方Window-...导入
+
+![image-20260319103919910](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260319103919910.png)
+
+在GitHub上找了一个开源中文字符库，导入后结果
+
+![image-20260319180043556](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260319180043556.png)
+
+批量使用
+
+新建脚本，继承自UI_ToolTip
+
+这里用到了overload，和上面的方法同名，但多了一个参数 SkillDataSO skillData。这允许其他脚本（比如你的 UI_TreeNode）在调用时，顺便把技能数据塞进来。
+
+```
+using TMPro;
+using UnityEngine;
+
+public class UI_SkillToolTip : UI_ToolTip
+{
+    [SerializeField] private TextMeshProUGUI skillName;
+    [SerializeField] private TextMeshProUGUI skillDescription;
+    [SerializeField] private TextMeshProUGUI skillRequirements;
+
+    public override void ShowToolTip(bool show, RectTransform targetRect)
+    {
+        base.ShowToolTip(show, targetRect);
+    }
+
+    public void ShowToolTip(bool show, RectTransform targetRect, SkillDataSO skillData)
+    {
+        base.ShowToolTip(show, targetRect);
+
+        if (show == false)
+            return;
+
+        skillName.text = skillData.displayName;
+        skillDescription.text = skillData.description;
+        skillRequirements.text = "需求: \n" + "-" + skillData.cost + "专注";
+    }
+}
+
+```
+
+最后在树节点更新ShowToolTip函数，并修改挂在上面的脚本，则可以更新技能数据
+
+```
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ui.skillToolTip.ShowToolTip(true, rect, skillData);
+
+        UpdateIconColor(Color.white * .9f);
+
+        // 变大+悬浮
+        RectTransform rectTrans = skillIcon.GetComponent<RectTransform>();
+        rectTrans.localScale = originalScale * hoverScale; // 放大
+        rectTrans.anchoredPosition = originalPos + new Vector2(0, hoverYOffset); // 向上偏移
+    }
+```
+
+小结
+
+这五个脚本各司其职，构成了一个经典的 MVC（模型-视图-控制器）架构：
+
+1. **SkillDataSO (数据层 / Model)****身份**：数据的载体（基于 ScriptableObject）。**职责**：纯粹用来存储单个技能的静态配置（如名字、描述、图标、消耗的专注点）。不需要挂载到场景中，方便策划在外部直接配置。
+2. **UI (中枢管理层)****身份**：UI 系统的总管家。**职责**：挂载在最顶层的 Canvas 或 UI 根节点上。它负责去寻找并缓存 UI_SkillToolTip 的引用。这样下面的无数个技能节点就不需要各自去 Find 提示框了，直接找老总（UI）要就行。
+3. **UI_TreeNode (交互与控制层 / Controller)****身份**：每一个具体的技能图标（节点）。**职责**：它拥有对应的 SkillDataSO 数据。负责监听玩家的鼠标操作（进入、移出、点击）。在玩家操作时，改变自身的颜色、大小，并通知提示框：“我被摸了，快把我的数据拿去显示！”
+4. **UI_ToolTip (显示基类 / View Base)****身份**：所有提示框的“通用底层逻辑”。**职责**：只负责两件事：**怎么藏**（移到 9999 坐标外）和 **怎么防溢出**（根据屏幕 1080p/4K 分辨率动态计算偏移量，防止超框）。
+5. **UI_SkillToolTip (具体显示层 / View Specific)****身份**：技能专用的提示框面板。**职责**：继承自基类。接收从节点传来的 SkillDataSO，把数据拆解开，一行一行地填入自己的 TextMeshPro 文本框里。
+
+
+
+#### 自定义连接技能树
+
+树节点新建image子对象为连接线，设置宽150高5，然后创建其父对象Connection
+
+使其从边界增长而不是中间，这一步将枢轴改到左边即可
+
+新建脚本UI_TreeConnectHandler
+
+```
+using System;
+using System.Runtime.CompilerServices;
+using UnityEngine;
+
+[Serializable]
+
+public class UI_TreeConnectionDetails
+{
+    public NodeDirectionType direction;
+    [Range(100f,350f)] public float length;
+
+}
+public class UI_TreeConnectHandler : MonoBehaviour
+{
+    [SerializeField] private UI_TreeConnectionDetails[] details;
+    [SerializeField] private UI_TreeConnection[] connections;
+}
+
+```
+
+UI_TreeConnection
+
+```
+using UnityEngine;
+
+public class UI_TreeConnection : MonoBehaviour
+{
+
+}
+
+public enum NodeDirectionType
+{
+    None,
+    UpLeft,
+    Up,
+    UpRight,
+    Left,
+    Right,
+    DownLeft,
+    Down,
+    DownRight
+}
+```
+
+实现方法函数
+
+```
+    public void DirectConnection(NodeDirectionType direction, float length)
+    {
+        bool shouldBeActive = direction != NodeDirectionType.None;
+        float finalLength = shouldBeActive ? length : 0;
+        float angle = GetDirectionAngle(direction);
+
+        connectPoint.localRotation= Quaternion.Euler(0,0,angle);
+        connectionLength.sizeDelta =new Vector2 (finalLength,connectionLength.sizeDelta.y);
+    }
+```
+
+看起来很烧脑，但实际上就是将连接线可以在unity面板里进行8向调整并连接子技能
+
+为了更好的连接子技能并变化连接线长度，需要在connection脚本加入
+
+```
+    [SerializeField] private RectTransform connectionPosition;
+    public Vector2 GetConnectionPoint(RectTransform rect)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle
+        (
+            rect.parent as RectTransform, // 参数 1：目标容器（把坐标转换到谁的底盘上？）
+            connectionPosition.position,  // 参数 2：绝对真理（插座在屏幕/世界上的绝对坐标）
+            null,                         // 参数 3：摄像机（Canvas是Overlay模式填null即可）
+            out var localPosition         // 参数 4：输出结果（算出来的本地坐标存到这里）
+        );
+        return localPosition;
+    }
+```
+
+
+这段代码是 Unity UI 开发中**含金量极高**的一段代码。它解决了一个所有做连线、拖拽、UI跟随系统都会遇到的世纪难题：**UI 坐标系转换（Coordinate Hell）**。
+
+简单来说，它的作用是：**精准计算出“连线”应该连接到当前技能节点的哪个具体位置。**
+
+现在已经可以自由加入节点技能
+
+![image-20260320182413838](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260320182413838.png)
+
+#### 技能解锁顺序系统
+
+
+
 ## 属性系统
 
 新建
@@ -2595,7 +3038,7 @@ Shader 是用来控制物体表面如何被渲染（即如何表现光照、颜�
 
 重点次级纹理名称要对应之后的shader
 
-之后添加次级纹理，这里有个命名技巧，将次级纹理名前加下划线，在ShaderGraph添加名为无下划线的版本，引擎会自动搜索该纹理并添加<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20250627155843884.png" alt="image-20250627155843884" style="zoom:67%;" />
+之后添加次级纹理，这里有个命名技巧，将次级纹理名前加下划线，在ShaderGraph添加名为无下划线的版本，引擎会自动搜索该纹理并添加<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260320190728363.png" alt="image-20260320190728363" style="zoom:67%;" />
 
 是主纹理的RGBA和次级纹理的R相加是为了防止主纹理透明度被覆盖
 
@@ -2614,4 +3057,21 @@ extra：防止底色影响过大，首先将3个黑白纹理使用one minus反�
 <img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20250630131125403.png" alt="image-20250630131125403" style="zoom:67%;" />
 
 <img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20250630124611458.png" alt="image-20250630124611458" style="zoom:67%;" />
+
+
+
+## 动画更新
+
+promt合集
+
+- Nano Banana 加入Smear Frame（拖影帧 / 涂抹帧）效果就是夸张扭曲效果来体现速度感
+- 为我将要使用的生图AI生成Prompt，我想为我的暗黑像素风游戏生成关卡背景图，要求包含几种富有特色的场景，可以体现游戏设计水平同时具有美观个性的画风
+- 无论使用哪个场景，请在你的Prompt末尾加上以下核心格式控制词，这能保证生成出符合你代码的图像：
+
+  > **英文后缀:** 2D game background, side-scrolling platformer, horizontal layout, distinct depth layers (foreground, midground, background), parallax ready, flat layers, dark pixel art, 16-bit style, Castlevania style, high quality, masterpiece --ar 16:9 --stylize 150 --v 6.0
+  > **中文解释:** 2D游戏背景，横版跳跃游戏，水平布局，明显的深度层级（前景、中景、远景），视差准备，扁平图层，暗黑像素风，16位机风格，恶魔城风格，高质量，杰作（比例建议16:9或更长的21:9）。
+
+  
+
+
 

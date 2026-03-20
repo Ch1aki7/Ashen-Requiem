@@ -71,6 +71,7 @@ Material:
     m_Ints: []
     m_Floats: []
     m_Colors:
-    - _SwordColor: {r: 2.0131118, g: 0.29860723, b: 0, a: 0}
+    - White: {r: 1, g: 1, b: 1, a: 1}
+    - _SwordColor: {r: 0.9093763, g: 1.0259631, b: 1.0592737, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
