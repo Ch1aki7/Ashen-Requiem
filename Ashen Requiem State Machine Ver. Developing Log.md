@@ -2339,7 +2339,289 @@ public enum NodeDirectionType
 
 #### 技能解锁顺序系统
 
+该部分的目的是让技能具有从上到下的解锁顺序，同时在每个技能里注明先决节点技能以及锁定原因，所需资源等等
 
+进入treenode脚本，更新内容
+
+```
+    [Header("Unlock details")]
+    public UI_TreeNode[] neededNodes;
+    public UI_TreeNode[] conflictNodes;
+    public bool isUnlocked;
+    public bool isLocked;
+
+    [Header("Skill details")]
+    [SerializeField] private SkillDataSO skillData;
+    [SerializeField] private string skillName;
+    [SerializeField] private Image skillIcon;
+    [SerializeField] private Color skillLockedColor;
+```
+
+以及CanBeUnlocked函数
+
+```
+    private bool CanBeUnlocked()
+    {
+        if(isUnlocked||isLocked)
+        {
+            return false;
+        }
+
+        // 父节点必须先解锁
+        foreach (var node in neededNodes)
+        {
+            if (node.isUnlocked == false) 
+                return false;
+        }
+
+        foreach (var node in conflictNodes)
+        {
+            if (node.isUnlocked)
+                return false;
+        }
+
+        return true;
+    }
+```
+
+测试可以正常工作，现在需要完善提示界面
+
+新建脚本UI_SkillTree，对所有技能节点添加该父级节点
+
+```
+using UnityEngine;
+
+public class UI_SkillTree : MonoBehaviour
+{
+    public int skillPoint;
+
+    public bool EnoughSkillPoints(int cost) => skillPoint >= cost;
+    public void RemoveSkillPoints(int cost) => skillPoint -= cost;
+}
+```
+
+在节点脚本应用即可，验证正常工作
+
+改进技能提示，通过预设的十六进制颜色代码（Hex，如 #00FF00 代表绿色，#FF0000 代表红色），结合 StringBuilder，你可以根据玩家的当前状态（如技能点够不够、前置技能有没有解锁），让文字呈现出不同的颜色反馈。
+
+**StringBuilder**
+
+在 C# 和 Unity 开发中，StringBuilder 的核心作用是：**极大地提升字符串（String）拼接时的性能，并减少内存垃圾（GC）的产生。**
+
+简单来说，它是专门用来**“组装一段长文字”**的高效工具。
+
+```
+string text = "需求：\n";
+text += "- 3 技能点\n"; 
+text += "- 前置：火球术";
+```
+
+**看似只是加了字，但系统底层是这样工作的：**
+
+1. 创建一块内存存 "需求：\n"。
+2. 当执行 += 时，系统发现字符串不能改，于是**丢弃**原来的内存，**重新申请一块新内存**，存入 "需求：\n- 3 技能点\n"。
+3. 再次 += 时，再次丢弃旧的，**又申请一块更大的新内存**，存入最终结果。
+
+**致命后果**：那些被丢弃的旧字符串变成了“内存垃圾（Garbage）”。在 Unity 游戏运行中，如果内存垃圾太多，系统就会触发 GC（垃圾回收）去清理它们，**这会导致游戏画面瞬间卡顿（掉帧）**。
+
+更新需求文本显示
+
+```
+    private string GetRequirements(int skillCost, UI_TreeNode[] neededNodes)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.AppendLine("需要:");
+
+        string costColor = skillTree.EnoughSkillPoints(skillCost) ? metConditionHex : notMetConditionHex;
+        sb.AppendLine($"<color={costColor}> - {skillCost}技能点</color>");
+
+        foreach (var node in neededNodes)
+        {
+            string nodeColor = node.isUnlocked ? metConditionHex : notMetConditionHex;
+            sb.AppendLine($"<color={nodeColor}> - {node.skillData.displayName}</color>");
+        }
+        return sb.ToString();
+    }
+```
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260321122834528.png" alt="image-20260321122834528" style="zoom:67%;" />
+
+同理加入冲突提示，但是同框字被压缩的太小了，于是横排另开了一栏文字框
+
+```
+    private string GetConflicts(UI_TreeNode[] conflictNodes)
+    {
+        if (conflictNodes == null || conflictNodes.Length <= 0)
+            return ""; // 没有冲突时返回空
+
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine($"<color={importantInfoHex}>只能选择其一：</color>");
+
+        foreach (var node in conflictNodes)
+        {
+            sb.AppendLine($"<color={importantInfoHex}> - {node.skillData.displayName}</color>");
+        }
+
+        return sb.ToString();
+    }
+```
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260321131658807.png" alt="image-20260321131658807" style="zoom:67%;" />
+
+接下来添加锁定原因显示
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260321133942327.png" alt="image-20260321133942327" style="zoom:67%;" />
+
+添加点击锁定技能时文本闪烁
+
+依旧协程
+
+✅ 商业级写法一：直接修改组件的 Color 属性（零垃圾协程法）
+
+平常我们会**只给文本赋一次值（不带富文本标签），然后在协程里只改变这个文本组件的颜色属性**。
+改变颜色属性完全不会引发字符串内存分配，也不会引发 UI 网格重建，性能开销几乎为 0。
+
+你需要用到 Unity 自带的 ColorUtility.TryParseHtmlString 把你的 Hex 字符串转换成真正的 Color：
+
+```
+public void LockedSkillEffect()
+    {
+        if (textEffect != null)
+            StopCoroutine(textEffect);
+
+        textEffect = StartCoroutine(TextBlinkEffect(skillRequirements, 0.15f, 3));
+    }
+
+    private IEnumerator TextBlinkEffect(TextMeshProUGUI text, float blinkInterval, int blinkCount)
+    {
+        // 1. 确保文字本身不带富文本 <color> 标签，纯文字即可
+        text.text = lockedReason; 
+
+        // 2. 将你的 Hex 字符串转换为 Unity 的 Color 对象
+        Color normalColor, blinkColor;
+        ColorUtility.TryParseHtmlString(importantInfoHex, out normalColor);
+        ColorUtility.TryParseHtmlString(notMetConditionHex, out blinkColor);
+
+        // 3. 循环只改变颜色，绝对不碰 .text 属性
+        for (int i = 0; i < blinkCount; i++)
+        {
+            text.color = blinkColor; // 变红
+            yield return new WaitForSeconds(blinkInterval);
+
+            text.color = normalColor; // 变回原色
+            yield return new WaitForSeconds(blinkInterval);
+        }
+
+        // 4. (好习惯) 循环结束后，确保颜色停留在默认状态
+        text.color = normalColor;
+        textEffect = null;
+    }
+```
+
+*💡 提示：如果使用这种方法，请确保在传入 lockedReason 时，字符串里不要带 <color=#...> 标签，否则组件本身的 text.color 可能会被富文本覆盖而失效。*
+
+🚀 商业级写法二：使用 DOTween 插件（业界绝对主流，1行代码搞定）
+
+在真正的游戏公司里，99% 的 UI 动画（闪烁、放大、飞入）**根本不会手写协程**，而是全部交给开源免费的神级插件 **DOTween**。
+
+如果你在项目里导入了 DOTween 插件（Asset Store 免费下载），你的闪烁效果可以直接精简成**一句话**，连协程都不需要写：
+
+```
+using DG.Tweening; // 引入 DOTween
+
+// ...
+
+    public void LockedSkillEffect()
+    {
+        // 将 Hex 转换为 Color
+        UnityEngine.ColorUtility.TryParseHtmlString(notMetConditionHex, out Color blinkColor);
+        UnityEngine.ColorUtility.TryParseHtmlString(importantInfoHex, out Color normalColor);
+
+        // 确保文字纯净并设为基础色
+        skillRequirements.text = lockedReason;
+        skillRequirements.color = normalColor;
+
+        // 杀掉之前的动画（防止狂点叠加）
+        skillRequirements.DOKill();
+
+        // 【这1行代码代替了你整个协程】：
+        // 0.15秒变到红色，来回循环6次（3次红3次原色），循环方式为 Yoyo (像溜溜球一样来回)
+        skillRequirements.DOColor(blinkColor, 0.15f).SetLoops(6, LoopType.Yoyo);
+    }
+```
+
+### 卧槽，DOTween真爽吧
+
+<img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260321140626411.png" alt="image-20260321140626411" style="zoom:67%;" />
+
+修改先前的悬浮效果，更为平滑和动态
+
+```
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ui.skillToolTip.ShowToolTip(true, rect, this);
+
+        UpdateIconColor(Color.white * .9f);
+
+        transform.DOKill(); // 杀掉上一个动画防抖
+        transform.DOScale(originalScale * 1.1f, 0.2f).SetEase(Ease.OutBack);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ui.skillToolTip.ShowToolTip(false, rect);
+
+        if (isUnlocked)
+        {
+            UpdateIconColor(Color.white);
+        }
+        else
+            UpdateIconColor(skillLockedColor);
+
+        transform.DOKill();
+        transform.DOScale(originalScale, 0.2f).SetEase(Ease.OutQuad);
+    }
+```
+
+增加解锁动画
+
+```
+    private void Unlock()
+    {
+        isUnlocked = true;
+        UpdateIconColor(Color.white);
+        skillTree.RemoveSkillPoints(skillData.cost);
+        LockConflictNodes();
+
+        // 果冻弹跳效果：参数(弹跳力度Vector3, 持续时间, 震动次数, 弹性)
+        transform.DOPunchScale(new Vector3(0.2f, 0.2f, 0f), 0.5f, 5, 1f);
+
+        // 配合颜色渐变变白
+        skillIcon.DOColor(Color.white, 0.3f);
+    }
+```
+
+增加锁定效果
+
+```
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (CanBeUnlocked())
+        {
+            Unlock();
+        }
+        else if (isLocked)
+        {
+            ui.skillToolTip.LockedSkillEffect();
+            rect.DOKill();
+
+            // 震动效果：参数(持续时间, 震动强度像素, 震频, 随机性)
+            // 注意：UI震动一定要用 DOShakeAnchorPos，不要用 DOShakePosition
+            rect.DOShakeAnchorPos(0.3f, strength: new Vector2(10f, 0f), vibrato: 30, randomness: 90);
+        }
+    }
+```
 
 ## 属性系统
 

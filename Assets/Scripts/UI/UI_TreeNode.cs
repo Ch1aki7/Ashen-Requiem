@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEditor.Tilemaps;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -7,13 +8,20 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 {
     private UI ui;
     private RectTransform rect;
+    private UI_SkillTree skillTree;
 
-    [SerializeField] private SkillDataSO skillData;
-    [SerializeField] private string skillName;
-    [SerializeField] private Image skillIcon;
-    [SerializeField] private Color skillLockedColor;
+    [Header("Unlock details")]
+    public UI_TreeNode[] neededNodes;
+    public UI_TreeNode[] conflictNodes;
     public bool isUnlocked;
     public bool isLocked;
+
+    [Header("Skill details")]
+    public SkillDataSO skillData;
+    [SerializeField] private string skillName;
+    [SerializeField] private Image skillIcon;
+    [SerializeField] private int skillCost;
+    [SerializeField] private Color skillLockedColor;
 
     // hover悬浮变量
     [Header("悬浮放大倍数")]
@@ -32,6 +40,7 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         skillName = skillData.displayName;
         skillIcon.sprite = skillData.icon;
+        skillCost = skillData.cost;
         gameObject.name = "UI_TreeNode - " + skillData.displayName;
     }
 
@@ -39,6 +48,7 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         ui = GetComponentInParent<UI>();
         rect = GetComponent<RectTransform>();
+        skillTree=GetComponentInParent<UI_SkillTree>();
 
         UpdateIconColor(skillLockedColor);
 
@@ -53,11 +63,26 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         originalPos = rectTrans.anchoredPosition;
     }
 
+    private void LockConflictNodes()
+    {
+        foreach(var node in conflictNodes)
+        {
+            node.isLocked = true;
+        }
+    }
+
     private void Unlock()
     {
         isUnlocked = true;
-
         UpdateIconColor(Color.white);
+        skillTree.RemoveSkillPoints(skillData.cost);
+        LockConflictNodes();
+
+        // 果冻弹跳效果：参数(弹跳力度Vector3, 持续时间, 震动次数, 弹性)
+        transform.DOPunchScale(new Vector3(0.2f, 0.2f, 0f), 0.5f, 5, 1f);
+
+        // 配合颜色渐变变白
+        skillIcon.DOColor(Color.white, 0.3f);
     }
 
     private bool CanBeUnlocked()
@@ -65,6 +90,22 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if(isUnlocked||isLocked)
         {
             return false;
+        }
+
+        if(!skillTree.EnoughSkillPoints(skillData.cost))
+            return false;
+
+        // 父节点必须先解锁
+        foreach (var node in neededNodes)
+        {
+            if (node.isUnlocked == false) 
+                return false;
+        }
+
+        foreach (var node in conflictNodes)
+        {
+            if (node.isUnlocked)
+                return false;
         }
 
         return true;
@@ -84,20 +125,25 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         {
             Unlock();
         }
-        else
-            Debug.Log("解锁不能");
+        else if (isLocked)
+        {
+            ui.skillToolTip.LockedSkillEffect();
+            rect.DOKill();
+
+            // 震动效果：参数(持续时间, 震动强度像素, 震频, 随机性)
+            // 注意：UI震动一定要用 DOShakeAnchorPos，不要用 DOShakePosition
+            rect.DOShakeAnchorPos(0.3f, strength: new Vector2(10f, 0f), vibrato: 30, randomness: 90);
+        }
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        ui.skillToolTip.ShowToolTip(true, rect, skillData);
+        ui.skillToolTip.ShowToolTip(true, rect, this);
 
         UpdateIconColor(Color.white * .9f);
 
-        // 变大+悬浮
-        RectTransform rectTrans = skillIcon.GetComponent<RectTransform>();
-        rectTrans.localScale = originalScale * hoverScale; // 放大
-        rectTrans.anchoredPosition = originalPos + new Vector2(0, hoverYOffset); // 向上偏移
+        transform.DOKill(); // 杀掉上一个动画防抖
+        transform.DOScale(originalScale * 1.1f, 0.2f).SetEase(Ease.OutBack);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -111,9 +157,7 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         else
             UpdateIconColor(skillLockedColor);
 
-        // 恢复缩放和位置
-        RectTransform rectTrans = skillIcon.GetComponent<RectTransform>();
-        rectTrans.localScale = originalScale;
-        rectTrans.anchoredPosition = originalPos;
+        transform.DOKill();
+        transform.DOScale(originalScale, 0.2f).SetEase(Ease.OutQuad);
     }
 }

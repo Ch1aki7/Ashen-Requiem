@@ -29,7 +29,8 @@ public class UI_TreeConnectHandler : MonoBehaviour
 
         if (connectionDetails.Length != connections.Length)
         {
-            Debug.Log("连接物体和连接应该相等");
+            // 避免频繁弹警告，最好只在长度不一致时提示一次
+            Debug.LogWarning($"[{gameObject.name}] 的连接物体和连接线数组长度不相等！");
             return;
         }
 
@@ -39,6 +40,11 @@ public class UI_TreeConnectHandler : MonoBehaviour
     {
         for(int i = 0;i<connectionDetails.Length;i++)
         {
+            // 【防错 1】：如果数组里有空槽位（即面板上显示为 None），直接跳过，防止报错
+            if (connections[i] == null) continue;
+            if (connectionDetails[i] == null || connectionDetails[i].childNode == null) continue;
+
+            // 只有当连线和子节点都拖入面板后，才执行计算
             Vector2 targetPosition = connections[i].GetConnectionPoint(rect);
 
             connections[i].DirectConnection(connectionDetails[i].direction, connectionDetails[i].length);
@@ -46,5 +52,14 @@ public class UI_TreeConnectHandler : MonoBehaviour
         }
     }
 
-    public void SetPosition(Vector2 position) => rect.anchoredPosition = position;
+    public void SetPosition(Vector2 position)
+    {
+        // 【防错 2 解决核心Bug】：当父节点强制呼叫子节点时，必须确保子节点的 rect 已经被初始化！
+        if (rect == null)
+        {
+            rect = GetComponent<RectTransform>();
+        }
+
+        rect.anchoredPosition = position;
+    }
 }
