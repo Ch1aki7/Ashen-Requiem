@@ -2347,6 +2347,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI
   skillToolTip: {fileID: 0}
+  skillTreePanel: {fileID: 0}
+  skillTreeKey: 112
 --- !u!1 &372872917
 GameObject:
   m_ObjectHideFlags: 0
@@ -5375,7 +5377,7 @@ MonoBehaviour:
     baseValue: 0
     modifiers: 
   iceDamage:
-    baseValue: 0
+    baseValue: 1
     modifiers: 
   thunderDamage:
     baseValue: 0
@@ -6087,7 +6089,8 @@ MonoBehaviour:
   notMetConditionHex: '#FF0000'
   importantInfoHex: '#FFD700'
   exampleColor: {r: 1, g: 0.8431373, b: 0, a: 1}
-  lockedReason: "\u4F60\u5DF2\u7ECF\u505A\u51FA\u4E86\u9009\u62E9\\n\u8BE5\u6280\u80FD\u73B0\u5DF2\u88AB\u9501\u5B9A."
+  lockedReason1: "\u4F60\u5DF2\u7ECF\u505A\u51FA\u4E86\u9009\u62E9\n\u8BE5\u6280\u80FD\u73B0\u5DF2\u88AB\u9501\u5B9A."
+  lockedReason2: "\u8BF7\u5148\u89E3\u9501\u4E0A\u65B9\u7684\u6280\u80FD"
 --- !u!1 &1353384416
 GameObject:
   m_ObjectHideFlags: 0
@@ -11269,6 +11272,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2134773397}
   - component: {fileID: 2134773398}
+  - component: {fileID: 2134773399}
   m_Layer: 5
   m_Name: UI_SkillTree
   m_TagString: Untagged
@@ -11313,7 +11317,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00a9ebd63f7e2d943b15b76b29fd927b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_SkillTree
+  isOpen: 0
   skillPoint: 7
+--- !u!225 &2134773399
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2134773396}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &2144831571
 GameObject:
   m_ObjectHideFlags: 0

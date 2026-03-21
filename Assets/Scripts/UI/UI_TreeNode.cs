@@ -127,11 +127,18 @@ public class UI_TreeNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         }
         else if (isLocked)
         {
-            ui.skillToolTip.LockedSkillEffect();
+            ui.skillToolTip.LockedSkillEffect1();
             rect.DOKill();
 
             // 震动效果：参数(持续时间, 震动强度像素, 震频, 随机性)
             // 注意：UI震动一定要用 DOShakeAnchorPos，不要用 DOShakePosition
+            rect.DOShakeAnchorPos(0.3f, strength: new Vector2(10f, 0f), vibrato: 30, randomness: 90);
+        }
+        else if (!isUnlocked)
+        {
+            ui.skillToolTip.LockedSkillEffect2();
+            rect.DOKill();
+
             rect.DOShakeAnchorPos(0.3f, strength: new Vector2(10f, 0f), vibrato: 30, randomness: 90);
         }
     }

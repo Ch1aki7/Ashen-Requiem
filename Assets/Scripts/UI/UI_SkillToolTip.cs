@@ -20,7 +20,8 @@ public class UI_SkillToolTip : UI_ToolTip
     [SerializeField] private string notMetConditionHex;
     [SerializeField] private string importantInfoHex;
     [SerializeField] private Color exampleColor;
-    [SerializeField] private string lockedReason = "你已经做出了选择\n该技能现已被锁定.";
+    [SerializeField] private string lockedReason1 = "你已经做出了选择\n该技能现已被锁定.";
+    [SerializeField] private string lockedReason2 = "请先解锁上方的技能";
 
     protected override void Awake()
     {
@@ -42,7 +43,7 @@ public class UI_SkillToolTip : UI_ToolTip
         skillName.text = node.skillData.displayName;
         skillDescription.text = node.skillData.description;
 
-        string skillLockedText = $"<color={importantInfoHex}>{lockedReason}</color>";
+        string skillLockedText = $"<color={importantInfoHex}>{lockedReason1}</color>";
         string requirements = node.isLocked ? skillLockedText : GetRequirements(node.skillData.cost, node.neededNodes);
 
         skillRequirements.text = requirements;
@@ -85,14 +86,32 @@ public class UI_SkillToolTip : UI_ToolTip
     }
 
 
-    public void LockedSkillEffect()
+    public void LockedSkillEffect1()
     {
         // 将 Hex 转换为 Color
         UnityEngine.ColorUtility.TryParseHtmlString(notMetConditionHex, out Color blinkColor);
         UnityEngine.ColorUtility.TryParseHtmlString(importantInfoHex, out Color normalColor);
 
         // 确保文字纯净并设为基础色
-        skillRequirements.text = lockedReason;
+        skillRequirements.text = lockedReason1;
+        skillRequirements.color = normalColor;
+
+        // 杀掉之前的动画（防止狂点叠加）
+        skillRequirements.DOKill();
+
+        // 【这1行代码代替了你整个协程】：
+        // 0.15秒变到红色，来回循环6次（3次红3次原色），循环方式为 Yoyo (像溜溜球一样来回)
+        skillRequirements.DOColor(blinkColor, 0.15f).SetLoops(6, LoopType.Yoyo);
+    }
+
+    public void LockedSkillEffect2()
+    {
+        // 将 Hex 转换为 Color
+        UnityEngine.ColorUtility.TryParseHtmlString(notMetConditionHex, out Color blinkColor);
+        UnityEngine.ColorUtility.TryParseHtmlString(importantInfoHex, out Color normalColor);
+
+        // 确保文字纯净并设为基础色
+        skillRequirements.text = lockedReason2;
         skillRequirements.color = normalColor;
 
         // 杀掉之前的动画（防止狂点叠加）
