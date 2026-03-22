@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 public class CharacterStats : MonoBehaviour
 {
@@ -13,10 +14,12 @@ public class CharacterStats : MonoBehaviour
     public Stat ElementResistance;
 
     [Header("Element Stats")]
+    public ElementType elementType;
     public Stat fireDamage;
     public Stat iceDamage;
     public Stat thunderDamage;
 
+    [Header("异常计数")]
     public bool isIgnited; // fire dot
     public bool isChilled; // freeze
     public bool isShocked; // paralysis
@@ -24,11 +27,16 @@ public class CharacterStats : MonoBehaviour
     private float igniteTimer;
     private float igniteDamageCD = 1;
     private float igniteDamageTimer;
+    [SerializeField] public int curBurnCharge;
+    [SerializeField] public int maxBurnCharge = 3;
 
     private float chilledTimer;
+    [SerializeField] public int curFreezeCharge;
+    [SerializeField] public int maxFreezeCharge = 3;
 
     private float shockedTimer;
-
+    [SerializeField] public int curShockCharge;
+    [SerializeField] public int maxShockCharge = 3;
 
 
     public int currentHP;
@@ -55,7 +63,6 @@ public class CharacterStats : MonoBehaviour
 
         if (igniteDamageTimer < 0 && isIgnited)
         {
-            Debug.Log("烧起来了");
             igniteDamageTimer = igniteDamageCD;
             TakeDamage(1);
         }
@@ -86,7 +93,7 @@ public class CharacterStats : MonoBehaviour
         bool canApplyShock = _thunderDamage > _fireDamage && _thunderDamage > _iceDamage;
 
 
-        _targetStats.ApplyAilments(canApplyIgnite, canApplyChill, canApplyShock);
+        _targetStats.ApplyAilments(canApplyIgnite, canApplyChill, canApplyShock, out ElementType element);
 
     }
 
@@ -98,28 +105,34 @@ public class CharacterStats : MonoBehaviour
         return totalMagicalDamage;
     }
 
-    public void ApplyAilments(bool _ignite, bool _chill, bool _shock)
+    public virtual void ApplyAilments(bool _ignite, bool _chill, bool _shock, out ElementType element)
     {
-        if (isIgnited || isChilled || isShocked)
-            return;
-
         if (_ignite)
         {
             isIgnited = _ignite;
+            element = ElementType.Fire;
             igniteTimer = 2;
+            return;
         }
 
         if (_chill)
         {
             isChilled = _chill;
+            element = ElementType.Ice;
             chilledTimer = 2;
+            return;
         }
 
         if (_shock)
         {
             isShocked = _shock;
+            element = ElementType.Lightning;
             shockedTimer = 2;
+            return;
         }
+
+        element = ElementType.None;
+        return;
     }
 
     public virtual void TakeDamage(int _damage)

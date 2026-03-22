@@ -51,10 +51,44 @@ public class Entity : MonoBehaviour
 
     }
 
+    // ÊÜ»÷Ð§¹û
     public virtual void Damage()
     {
         fx.StartCoroutine("FlashFX");
         StartCoroutine("HitKnockback");
+        if (stats.isShocked)
+        {
+            fx.FlashElementHit(ElementType.Lightning);
+            stats.curShockCharge += 1;
+            if(stats.curShockCharge >= stats.maxShockCharge)
+            {
+                fx.ThunderStrike();
+                stats.TakeDamage(10);
+                stats.curShockCharge = 0;
+            }
+        }
+        if (stats.isChilled)
+        {
+            fx.FlashElementHit(ElementType.Ice);
+            stats.curFreezeCharge += 1;
+            if(stats.curFreezeCharge >= stats.maxFreezeCharge)
+            {
+                fx.IceBurst();
+
+                stats.curFreezeCharge = 0;
+            }
+        }
+        if (stats.isIgnited)
+        {
+            fx.FlashElementHit(ElementType.Fire);
+            stats.curBurnCharge += 1;
+            if(stats.curBurnCharge >= stats.maxBurnCharge)
+            {
+                fx.FireBurning();
+
+                stats.curBurnCharge = 0;
+            }
+        }
     }
 
     protected virtual IEnumerator HitKnockback()

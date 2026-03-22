@@ -22,7 +22,6 @@ public class PlayerAnimationTriggers : MonoBehaviour
                 else if(player.transform.position.x > hit.GetComponent<Enemy>().transform.position.x && !hit.GetComponent<Enemy>().facingRight)
                     hit.GetComponent<Enemy>().Flip();
 
-                hit.GetComponent<Enemy>().Damage();
 
                 AttackScene.Instance.HitPause(player.hitPause);
                 AttackScene.Instance.CameraShake(player.shakeTime, player.hitMagnitude);
@@ -31,6 +30,7 @@ public class PlayerAnimationTriggers : MonoBehaviour
 
                 player.stats.DoDamage(_target);
                 player.stats.DoMagicalDamage(_target);
+                hit.GetComponent<Enemy>().Damage();
 
             }
         }

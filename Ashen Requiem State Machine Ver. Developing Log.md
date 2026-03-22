@@ -2892,15 +2892,159 @@ if(igniteDamageTimer < 0 && isIgnited)
 }
 ```
 
+制作火焰特效时，发现特效效果在敌人面向左边时位置正好，面向右边会偏移
+
+使用插座来保证位置
+
 #### 冰异常
+
+添加IceBurst动画
 
 #### 雷异常
 
+设想如下：当玩家的攻击带有雷属性伤害时，会积累雷属性异常值，当积累到一定程度时会对敌人触发雷击效果，并播放雷击动画
+
+要实现“攻击累积层数 -> 满层触发序列帧特效 -> 造成额外效果”，最专业、最高效的做法是**使用“特效预制体分离”配合“状态层数记录”**。不要把雷击的动画直接做到敌人身上，而是做成一个独立的特效预制体（Prefab）。
+
+新建视觉控制器脚本
+
+```
+using UnityEngine;
+
+public class VFX_AutoController : MonoBehaviour
+{
+    [SerializeField] private bool autoDestroy = true;
+    [SerializeField] private float destoryDelay = 1;
+    [Space]
+    [SerializeField] private bool randomOffset = true;
+    [SerializeField] private bool randomRotation = true;
+
+    [Header("随机位置")]
+    [SerializeField] private float xMinOffset = -.3f;
+    [SerializeField] private float xMaxOffset = .3f;
+    [Space]
+    [SerializeField] private float yMinOffset = -.3f;
+    [SerializeField] private float yMaxOffset = .3f;
+
+    private void Start()
+    {
+        ApplyRandomOffset();
+
+        if(autoDestroy)
+            Destroy(gameObject, destoryDelay);
+    }
+
+    private void ApplyRandomOffset()
+    {
+        if (!randomOffset)
+            return;
+
+        float xOffset = Random.Range(xMinOffset, xMaxOffset);
+        float yOffset = Random.Range(yMinOffset, yMaxOffset);
+
+        transform.position = transform.position + new Vector3(xOffset, yOffset);
+    }
+
+    private void ApplyRandomRotation()
+    {
+        if (!randomRotation)
+            return;
+
+        float zRotation = Random.Range(0, 360);
+
+        transform.Rotate(0, 0, zRotation);
+    }
+}
+
+```
+
+元素变色依旧DOTween
+
+```
+    // 元素叠层提示：闪烁对应颜色
+    public void FlashElementHit(string elementType)
+    {
+        sr.DOKill();
+        Color targetColor = Color.white;
+
+        if (elementType == "Fire") targetColor = burnVfx;
+        else if (elementType == "Ice") targetColor = chillVfx;
+        else if (elementType == "Thunder") targetColor = lightenVfx;
+
+        sr.color = targetColor;
+        sr.DOColor(Color.white, 0.25f); // 0.25秒平滑褪色
+    }
+```
+
+受击效果在Entity类实现
+
+```
+    // 受击效果
+    public virtual void Damage()
+    {
+        fx.StartCoroutine("FlashFX");
+        StartCoroutine("HitKnockback");
+        fx.FlashElementHit("Thunder");
+    }
+```
+
+那么如何判断受到的元素类型呢？在CharacterStats有函数 `public virtual void ApplyAilments(bool _ignite, bool _chill, bool _shock)`，现在对其进行修改
+
+新建Entity_StatusHandler
+
+完善CharacterStats，测试最大3层触发雷击
+
+```
+    [Header("异常计数")]
+    public bool isIgnited; // fire dot
+    public bool isChilled; // freeze
+    public bool isShocked; // paralysis
+
+    private float igniteTimer;
+    private float igniteDamageCD = 1;
+    private float igniteDamageTimer;
+
+    private float chilledTimer;
+
+    private float shockedTimer;
+    [SerializeField] private int curShockCharge;
+    [SerializeField] private int maxShockCharge = 3;
+```
+
+Entity脚本计数
+
+```
+    // 受击效果
+    public virtual void Damage()
+    {
+        fx.StartCoroutine("FlashFX");
+        StartCoroutine("HitKnockback");
+        if (stats.isShocked)
+        {
+            fx.FlashElementHit(ElementType.Lightning);
+            stats.curShockCharge += 1;
+        }
+        if (stats.isChilled)
+            fx.FlashElementHit(ElementType.Ice);
+        if (stats.isIgnited)
+            fx.FlashElementHit(ElementType.Fire);
+    }
+```
+
+EntityFX脚本实现视觉效果
+
+```
+    public void ThunderStrike()
+    {
+        Instantiate(lightningStrikeVfx, transform.position, Quaternion.identity);
+    }
+```
+
+![image-20260322120330623](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260322120330623.png)
+
 ### 异常视觉特效
 
-实现该部分需要运用一个十分重要的部分：Shader
-
-用闪烁简易实现
+详见上一节，采用DOTween实现
 
 ### 血条UI
 

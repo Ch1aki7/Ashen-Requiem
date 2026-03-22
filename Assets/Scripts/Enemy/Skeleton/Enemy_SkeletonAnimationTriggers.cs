@@ -24,11 +24,11 @@ public class Enemy_SkeletonAnimationTrigger : MonoBehaviour
 
                 if (hit.GetComponent<Player>().GOD == false)
                 {
-                hit.GetComponent<Player>().Damage();
                 PlayerStats _target = hit.GetComponent<PlayerStats>();
 
                 skeleton.stats.DoDamage(_target);
                 skeleton.stats.DoMagicalDamage(_target);
+                hit.GetComponent<Player>().Damage();
                 }
             }
         }

@@ -1973,7 +1973,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitMat: {fileID: 2100000, guid: 24281a21cf18a4e42bfaf7e3def4f243, type: 2}
-  chillvfx: {r: 0, g: 1, b: 1, a: 1}
+  chillVfx: {r: 0, g: 1, b: 1, a: 1}
+  burnVfx: {r: 1, g: 0, b: 0, a: 1}
+  lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  lightningStrikeVfx: {fileID: 0}
 --- !u!1 &346480186
 GameObject:
   m_ObjectHideFlags: 0
@@ -5345,7 +5348,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitMat: {fileID: 2100000, guid: 24281a21cf18a4e42bfaf7e3def4f243, type: 2}
-  chillvfx: {r: 0, g: 1, b: 1, a: 1}
+  chillVfx: {r: 0, g: 1, b: 1, a: 1}
+  burnVfx: {r: 1, g: 0, b: 0, a: 1}
+  lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  lightningStrikeVfx: {fileID: 0}
 --- !u!114 &1035952199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5373,18 +5379,21 @@ MonoBehaviour:
   ElementResistance:
     baseValue: 0
     modifiers: 
+  elementType: 0
   fireDamage:
     baseValue: 0
     modifiers: 
   iceDamage:
-    baseValue: 1
+    baseValue: 0
     modifiers: 
   thunderDamage:
-    baseValue: 0
+    baseValue: 1
     modifiers: 
   isIgnited: 0
   isChilled: 0
   isShocked: 0
+  curShockCharge: 0
+  maxShockCharge: 0
   currentHP: 0
 --- !u!1 &1038463125
 GameObject:
@@ -5633,7 +5642,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hitMat: {fileID: 2100000, guid: 24281a21cf18a4e42bfaf7e3def4f243, type: 2}
-  chillvfx: {r: 0, g: 1, b: 1, a: 1}
+  chillVfx: {r: 0, g: 1, b: 1, a: 1}
+  burnVfx: {r: 1, g: 0, b: 0, a: 1}
+  lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  lightningStrikeVfx: {fileID: 1910744640369735685, guid: f722d35217588694eafead92fcf36bf9, type: 3}
 --- !u!114 &1063815269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5661,6 +5673,7 @@ MonoBehaviour:
   ElementResistance:
     baseValue: 0
     modifiers: 
+  elementType: 0
   fireDamage:
     baseValue: 0
     modifiers: 
@@ -5673,6 +5686,8 @@ MonoBehaviour:
   isIgnited: 0
   isChilled: 0
   isShocked: 0
+  curShockCharge: 0
+  maxShockCharge: 3
   currentHP: 0
 --- !u!1 &1096621008
 GameObject:
