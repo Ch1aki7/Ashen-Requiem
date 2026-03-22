@@ -2810,6 +2810,13 @@ public Stat damage;
 public Stat maxHP;
 public Stat ElementResistance;
 
+//260322热修，隔离元素属性
+[Header("Element Stats")]
+public ElementType elementType;
+public Stat fireDamage;
+public Stat iceDamage;
+public Stat thunderDamage;
+
 [Header("Element Stats")]
 public Stat fireDamage;
 public Stat iceDamage;
@@ -3112,6 +3119,8 @@ private void UpdateHealthUI()
     slider.value = cs.currentHP;
 }
 ```
+
+### 默认属性设置
 
 
 

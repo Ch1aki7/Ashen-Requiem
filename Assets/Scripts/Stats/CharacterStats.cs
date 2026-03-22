@@ -11,7 +11,9 @@ public class CharacterStats : MonoBehaviour
 
     [Header("Defensive Stats")]
     public Stat maxHP;
-    public Stat ElementResistance;
+    public Stat fireResistance;
+    public Stat iceResistance;
+    public Stat thunderResistance;
 
     [Header("Element Stats")]
     public ElementType elementType;
@@ -80,8 +82,11 @@ public class CharacterStats : MonoBehaviour
         int _iceDamage = iceDamage.GetValue();
         int _thunderDamage = thunderDamage.GetValue();
 
+        _fireDamage = CheckTargetResistance(_targetStats, _fireDamage, ElementType.Fire);
+        _iceDamage = CheckTargetResistance(_targetStats, _iceDamage, ElementType.Ice);
+        _thunderDamage = CheckTargetResistance(_targetStats, _thunderDamage, ElementType.Lightning);
+
         int totalMagicalDamage = _fireDamage + _iceDamage + _thunderDamage + intelligence.GetValue();
-        totalMagicalDamage = CheckTargetResistance(_targetStats, totalMagicalDamage);
 
         _targetStats.TakeDamage(totalMagicalDamage);
 
@@ -98,11 +103,17 @@ public class CharacterStats : MonoBehaviour
     }
 
 
-    private static int CheckTargetResistance(CharacterStats _targetStats, int totalMagicalDamage)
+    private static int CheckTargetResistance(CharacterStats _targetStats, int elementDamage, ElementType element)
     {
-        totalMagicalDamage -= _targetStats.ElementResistance.GetValue();
-        totalMagicalDamage = Mathf.Clamp(totalMagicalDamage, 0, int.MaxValue);
-        return totalMagicalDamage;
+        if (element == ElementType.Fire)
+            elementDamage -= _targetStats.fireResistance.GetValue();
+        if (element == ElementType.Ice)
+            elementDamage -= _targetStats.iceResistance.GetValue();
+        if (element == ElementType.Lightning)
+            elementDamage -= _targetStats.thunderResistance.GetValue();
+
+        elementDamage = Mathf.Clamp(elementDamage, 0, int.MaxValue);
+        return elementDamage;
     }
 
     public virtual void ApplyAilments(bool _ignite, bool _chill, bool _shock, out ElementType element)

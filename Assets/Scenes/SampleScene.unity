@@ -1976,7 +1976,10 @@ MonoBehaviour:
   chillVfx: {r: 0, g: 1, b: 1, a: 1}
   burnVfx: {r: 1, g: 0, b: 0, a: 1}
   lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  groundSocket: {fileID: 0}
   lightningStrikeVfx: {fileID: 0}
+  burningVfx: {fileID: 0}
+  iceBurstVfx: {fileID: 0}
 --- !u!1 &346480186
 GameObject:
   m_ObjectHideFlags: 0
@@ -5351,7 +5354,10 @@ MonoBehaviour:
   chillVfx: {r: 0, g: 1, b: 1, a: 1}
   burnVfx: {r: 1, g: 0, b: 0, a: 1}
   lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  groundSocket: {fileID: 0}
   lightningStrikeVfx: {fileID: 0}
+  burningVfx: {fileID: 0}
+  iceBurstVfx: {fileID: 0}
 --- !u!114 &1035952199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5376,24 +5382,34 @@ MonoBehaviour:
   maxHP:
     baseValue: 5
     modifiers: 
-  ElementResistance:
+  fireResistance:
+    baseValue: 0
+    modifiers: 
+  iceResistance:
+    baseValue: 0
+    modifiers: 
+  thunderResistance:
     baseValue: 0
     modifiers: 
   elementType: 0
   fireDamage:
-    baseValue: 0
+    baseValue: 1
     modifiers: 
   iceDamage:
     baseValue: 0
     modifiers: 
   thunderDamage:
-    baseValue: 1
+    baseValue: 0
     modifiers: 
   isIgnited: 0
   isChilled: 0
   isShocked: 0
+  curBurnCharge: 0
+  maxBurnCharge: 3
+  curFreezeCharge: 0
+  maxFreezeCharge: 3
   curShockCharge: 0
-  maxShockCharge: 0
+  maxShockCharge: 3
   currentHP: 0
 --- !u!1 &1038463125
 GameObject:
@@ -5563,6 +5579,7 @@ Transform:
   - {fileID: 811090943}
   - {fileID: 1399092268}
   - {fileID: 1575569664}
+  - {fileID: 1538838886}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!50 &1063815266
@@ -5645,7 +5662,10 @@ MonoBehaviour:
   chillVfx: {r: 0, g: 1, b: 1, a: 1}
   burnVfx: {r: 1, g: 0, b: 0, a: 1}
   lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  groundSocket: {fileID: 1867315147}
   lightningStrikeVfx: {fileID: 1910744640369735685, guid: f722d35217588694eafead92fcf36bf9, type: 3}
+  burningVfx: {fileID: 8008956534693079371, guid: 07f34c136d0e6cd4b98a7778dabf6b89, type: 3}
+  iceBurstVfx: {fileID: 7150758868004369292, guid: f3f7dab720768974d8dfb1984b235591, type: 3}
 --- !u!114 &1063815269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5670,7 +5690,13 @@ MonoBehaviour:
   maxHP:
     baseValue: 20
     modifiers: 
-  ElementResistance:
+  fireResistance:
+    baseValue: 0
+    modifiers: 
+  iceResistance:
+    baseValue: 0
+    modifiers: 
+  thunderResistance:
     baseValue: 0
     modifiers: 
   elementType: 0
@@ -5686,6 +5712,10 @@ MonoBehaviour:
   isIgnited: 0
   isChilled: 0
   isShocked: 0
+  curBurnCharge: 0
+  maxBurnCharge: 3
+  curFreezeCharge: 0
+  maxFreezeCharge: 3
   curShockCharge: 0
   maxShockCharge: 3
   currentHP: 0
@@ -7171,6 +7201,38 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 5, y: 5}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!1 &1538838885
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1538838886}
+  m_Layer: 7
+  m_Name: Sockets
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1538838886
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1538838885}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1867315147}
+  m_Father: {fileID: 1063815264}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1554696947
 GameObject:
   m_ObjectHideFlags: 0
@@ -9081,6 +9143,37 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1867315146
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1867315147}
+  m_Layer: 7
+  m_Name: Ground
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1867315147
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867315146}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.14, y: -1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1538838886}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1878167999
 GameObject:
   m_ObjectHideFlags: 0
