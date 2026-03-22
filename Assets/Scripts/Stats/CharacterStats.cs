@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using System.Collections;
 
 public class CharacterStats : MonoBehaviour
 {
+    public Stat_SetupSO defaultStatSetup;
+
     [Header("Major Stats")]
     public Stat strength;
     public Stat intelligence;
@@ -31,6 +34,7 @@ public class CharacterStats : MonoBehaviour
     private float igniteDamageTimer;
     [SerializeField] public int curBurnCharge;
     [SerializeField] public int maxBurnCharge = 3;
+    private Coroutine igniteCoroutine;
 
     private float chilledTimer;
     [SerializeField] public int curFreezeCharge;
@@ -41,7 +45,7 @@ public class CharacterStats : MonoBehaviour
     [SerializeField] public int maxShockCharge = 3;
 
 
-    public int currentHP;
+    public float currentHP;
     protected virtual void Start()
     {
         currentHP = maxHP.GetValue();
@@ -72,21 +76,21 @@ public class CharacterStats : MonoBehaviour
 
     public virtual void DoDamage(CharacterStats _targetStats)
     {
-        int totalDamage = damage.GetValue() + strength.GetValue();
+        float totalDamage = damage.GetValue() + strength.GetValue();
         _targetStats.TakeDamage(totalDamage);
     }
 
     public virtual void DoMagicalDamage(CharacterStats _targetStats)
     {
-        int _fireDamage = fireDamage.GetValue();
-        int _iceDamage = iceDamage.GetValue();
-        int _thunderDamage = thunderDamage.GetValue();
+        float _fireDamage = fireDamage.GetValue();
+        float _iceDamage = iceDamage.GetValue();
+        float _thunderDamage = thunderDamage.GetValue();
 
         _fireDamage = CheckTargetResistance(_targetStats, _fireDamage, ElementType.Fire);
         _iceDamage = CheckTargetResistance(_targetStats, _iceDamage, ElementType.Ice);
         _thunderDamage = CheckTargetResistance(_targetStats, _thunderDamage, ElementType.Lightning);
 
-        int totalMagicalDamage = _fireDamage + _iceDamage + _thunderDamage + intelligence.GetValue();
+        float totalMagicalDamage = _fireDamage + _iceDamage + _thunderDamage + intelligence.GetValue();
 
         _targetStats.TakeDamage(totalMagicalDamage);
 
@@ -102,18 +106,84 @@ public class CharacterStats : MonoBehaviour
 
     }
 
-
-    private static int CheckTargetResistance(CharacterStats _targetStats, int elementDamage, ElementType element)
+    private static float CheckTargetResistance(CharacterStats _targetStats, float elementDamage, ElementType element)
     {
-        if (element == ElementType.Fire)
-            elementDamage -= _targetStats.fireResistance.GetValue();
-        if (element == ElementType.Ice)
-            elementDamage -= _targetStats.iceResistance.GetValue();
-        if (element == ElementType.Lightning)
-            elementDamage -= _targetStats.thunderResistance.GetValue();
+        float damageMultiplier = 1f;
 
-        elementDamage = Mathf.Clamp(elementDamage, 0, int.MaxValue);
+        switch (element)
+        {
+            case ElementType.Fire:
+                damageMultiplier = _targetStats.fireResistance.GetValue() / 100f;
+                break;
+            case ElementType.Ice:
+                damageMultiplier = _targetStats.iceResistance.GetValue() / 100f;
+                break;
+            case ElementType.Lightning:
+                damageMultiplier = _targetStats.thunderResistance.GetValue() / 100f;
+                break;
+            default:
+                // 如果没有对应抗性，默认承受 100% 伤害
+                damageMultiplier = 1f;
+                break;
+        }
+
+        // 这里用 Mathf.Max 保证最少受 0 点伤害
+        damageMultiplier = Mathf.Max(damageMultiplier, 0f);
+
+        elementDamage = elementDamage * damageMultiplier;
+
         return elementDamage;
+    }
+
+    public void UpdateResistance(char op, ElementType element, float value)
+    {
+        Stat targetResistance = null;
+        switch (element)
+        {
+            case ElementType.Fire:
+                targetResistance = fireResistance;
+                break;
+            case ElementType.Ice:
+                targetResistance = iceResistance;
+                break;
+            case ElementType.Lightning:
+                targetResistance = thunderResistance;
+                break;
+            default:
+                Debug.LogWarning("未知的元素类型，无法修改抗性！");
+                return;
+        }
+
+        float currentValue = targetResistance.GetValue();
+        float finalValue = currentValue;
+
+        switch (op)
+        {
+            case '+':
+                finalValue = currentValue + value;
+                break;
+            case '-':
+                finalValue = currentValue - value;
+                break;
+            case '*':
+                finalValue = currentValue * value;
+                break;
+            case '/':
+                if (value != 0)
+                {
+                    finalValue = currentValue / value;
+                }
+                else
+                {
+                    Debug.LogWarning("抗性计算错误：除数不能为0！");
+                }
+                break;
+            default:
+                Debug.LogWarning($"未知的操作符: {op}");
+                return;
+        }
+
+        targetResistance.SetBaseValue(finalValue);
     }
 
     public virtual void ApplyAilments(bool _ignite, bool _chill, bool _shock, out ElementType element)
@@ -146,7 +216,7 @@ public class CharacterStats : MonoBehaviour
         return;
     }
 
-    public virtual void TakeDamage(int _damage)
+    public virtual void TakeDamage(float _damage)
     {
         currentHP -= _damage;
 
@@ -154,8 +224,91 @@ public class CharacterStats : MonoBehaviour
             Die();
     }
 
+    public Stat GetResistanceStat(ElementType element)
+    {
+        switch (element)
+        {
+            case ElementType.Fire: return fireResistance;
+            case ElementType.Ice: return iceResistance;
+            case ElementType.Lightning: return thunderResistance;
+            default: return null;
+        }
+    }
+
+    public void ApplyResistanceBuff(ElementType element, int modifierValue, float duration)
+    {
+        StartCoroutine(ResistanceBuffRoutine(element, modifierValue, duration));
+    }
+
+    private IEnumerator ResistanceBuffRoutine(ElementType element, int modifierValue, float duration)
+    {
+        Stat targetStat = GetResistanceStat(element);
+        if (targetStat == null) yield break;
+
+        targetStat.AddModifier(modifierValue);
+
+        yield return new WaitForSeconds(duration);
+
+        targetStat.RemoveModifier(modifierValue);
+    }
+
+    #region 火焰dot协程
+    public void StartIgniteDoT(float duration, float tickRate, float damagePerTick)
+    {
+        if (igniteCoroutine != null)
+            StopCoroutine(igniteCoroutine);
+
+        igniteCoroutine = StartCoroutine(IgniteRoutine(duration, tickRate, damagePerTick));
+    }
+
+    private IEnumerator IgniteRoutine(float duration, float tickRate, float damagePerTick)
+    {
+        isIgnited = true;
+        float timer = duration;
+
+        while (timer > 0)
+        {
+            yield return new WaitForSeconds(tickRate);
+            timer -= tickRate;
+
+            TakeDamage(damagePerTick);
+
+            Entity entity = GetComponent<Entity>();
+            if (entity != null && entity.fx != null)
+            {
+                entity.fx.FireBurning();
+                entity.fx.FlashElementHit(ElementType.Fire);
+            }
+        }
+
+        isIgnited = false;
+        igniteCoroutine = null;
+    }
+    #endregion
     protected virtual void Die()
     {
+        StopAllCoroutines();
+    }
 
+    [ContextMenu("更新默认设置")]
+    public void ApplyDefaultSetup()
+    {
+        if (!defaultStatSetup)
+        {
+            Debug.Log("没有默认属性设置");
+            return;
+        }
+
+        maxHP.SetBaseValue(defaultStatSetup.maxHP);
+        fireResistance.SetBaseValue(defaultStatSetup.fireResistance);
+        iceResistance.SetBaseValue(defaultStatSetup.iceResistance);
+        thunderResistance.SetBaseValue(defaultStatSetup.thunderResistance);
+
+        strength.SetBaseValue(defaultStatSetup.strength);
+        intelligence.SetBaseValue(defaultStatSetup.intelligence);
+
+        fireDamage.SetBaseValue(defaultStatSetup.fireDamage);
+        iceDamage.SetBaseValue(defaultStatSetup.iceDamage);
+        thunderDamage.SetBaseValue(defaultStatSetup.thunderDamage);
     }
 }

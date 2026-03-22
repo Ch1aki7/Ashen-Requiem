@@ -5355,9 +5355,9 @@ MonoBehaviour:
   burnVfx: {r: 1, g: 0, b: 0, a: 1}
   lightenVfx: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   groundSocket: {fileID: 0}
-  lightningStrikeVfx: {fileID: 0}
-  burningVfx: {fileID: 0}
-  iceBurstVfx: {fileID: 0}
+  lightningStrikeVfx: {fileID: 1910744640369735685, guid: f722d35217588694eafead92fcf36bf9, type: 3}
+  burningVfx: {fileID: 8008956534693079371, guid: 07f34c136d0e6cd4b98a7778dabf6b89, type: 3}
+  iceBurstVfx: {fileID: 7150758868004369292, guid: f3f7dab720768974d8dfb1984b235591, type: 3}
 --- !u!114 &1035952199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5370,37 +5370,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21dc165dae902c6419705aadb52740a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  defaultStatSetup: {fileID: 11400000, guid: 9fe29176115e0dd4f996b6dacfada558, type: 2}
   strength:
-    baseValue: 0
-    modifiers: 
+    baseValue: 20
+    modifiers: []
   intelligence:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   damage:
-    baseValue: 1
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   maxHP:
-    baseValue: 5
-    modifiers: 
+    baseValue: 200
+    modifiers: []
   fireResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   iceResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   thunderResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   elementType: 0
   fireDamage:
-    baseValue: 1
-    modifiers: 
+    baseValue: 0
+    modifiers: []
   iceDamage:
     baseValue: 0
-    modifiers: 
+    modifiers: []
   thunderDamage:
     baseValue: 0
-    modifiers: 
+    modifiers: []
   isIgnited: 0
   isChilled: 0
   isShocked: 0
@@ -5678,37 +5679,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37c791c095568b043b17d24a33e03f54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  defaultStatSetup: {fileID: 11400000, guid: e0a3cfc0487ad3b4eacc354f850f1e1c, type: 2}
   strength:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   intelligence:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   damage:
     baseValue: 1
-    modifiers: 
+    modifiers: []
   maxHP:
-    baseValue: 20
-    modifiers: 
+    baseValue: 1000
+    modifiers: []
   fireResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   iceResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   thunderResistance:
-    baseValue: 0
-    modifiers: 
+    baseValue: 80
+    modifiers: []
   elementType: 0
   fireDamage:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   iceDamage:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   thunderDamage:
-    baseValue: 0
-    modifiers: 
+    baseValue: 10
+    modifiers: []
   isIgnited: 0
   isChilled: 0
   isShocked: 0

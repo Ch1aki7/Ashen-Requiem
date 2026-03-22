@@ -2879,6 +2879,8 @@ player.stats.DoMagicalDamage(_target);
 
 #### 火异常
 
+火爆后，有灼烧效果
+
 ```
 private float igniteTimer;
 private float igniteDamageCD;
@@ -2903,9 +2905,79 @@ if(igniteDamageTimer < 0 && isIgnited)
 
 使用插座来保证位置
 
+```
+   public void StartIgniteDoT(float duration, float tickRate, float damagePerTick)
+   {
+       if (igniteCoroutine != null)
+           StopCoroutine(igniteCoroutine);
+
+       igniteCoroutine = StartCoroutine(IgniteRoutine(duration, tickRate, damagePerTick));
+   }
+
+   private IEnumerator IgniteRoutine(float duration, float tickRate, float damagePerTick)
+   {
+       isIgnited = true;
+       float timer = duration;
+
+       while (timer > 0)
+       {
+           yield return new WaitForSeconds(tickRate);
+           timer -= tickRate;
+
+           TakeDamage(damagePerTick);
+
+           Entity entity = GetComponent<Entity>();
+           if (entity != null && entity.fx != null)
+           {
+               entity.fx.FireBurning();
+               entity.fx.FlashElementHit(ElementType.Fire);
+           }
+       }
+
+       isIgnited = false;
+       igniteCoroutine = null;
+   }
+```
+
 #### 冰异常
 
 添加IceBurst动画
+
+加入易伤效果，具体实现为减去抗性，抗性系统为260322后
+
+```
+ public Stat GetResistanceStat(ElementType element)
+ {
+     switch (element)
+     {
+         case ElementType.Fire: return fireResistance;
+         case ElementType.Ice: return iceResistance;
+         case ElementType.Lightning: return thunderResistance;
+         default: return null;
+     }
+ }
+```
+
+```
+   public void ApplyResistanceBuff(ElementType element, int modifierValue, float duration)
+   {
+       StartCoroutine(ResistanceBuffRoutine(element, modifierValue, duration));
+   }
+
+   private IEnumerator ResistanceBuffRoutine(ElementType element, int modifierValue, float duration)
+   {
+       Stat targetStat = GetResistanceStat(element);
+       if (targetStat == null) yield break;
+
+       targetStat.AddModifier(modifierValue);
+
+       yield return new WaitForSeconds(duration);
+
+       targetStat.RemoveModifier(modifierValue);
+   }
+```
+
+
 
 #### 雷异常
 
@@ -3121,6 +3193,32 @@ private void UpdateHealthUI()
 ```
 
 ### 默认属性设置
+
+新建SO脚本
+
+```
+using UnityEngine;
+
+[CreateAssetMenu(menuName = "RPG Setup/Default Stat Setup", fileName = "Default Stat Setup - ")] 
+public class Stat_SetupSO : ScriptableObject
+{
+    [Header("Defence")]
+    public float maxHP = 1000;
+    public float fireResistance = 80;
+    public float iceResistance = 80;
+    public float thunderResistance = 80;
+
+    [Header("Offense")]
+    public float strength = 10;
+    public float intelligence = 10;
+
+    [Header("Element")]
+    public float fireDamage = 10;
+    public float iceDamage = 10;
+    public float thunderDamage = 10;
+}
+
+```
 
 
 
