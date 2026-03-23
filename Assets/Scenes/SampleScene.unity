@@ -618,6 +618,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cooldown: 5
+  fireSwordColor: {r: 1.7207954, g: 0.46175435, b: 0.36255717, a: 1}
+  iceSwordColor: {r: 0.22943936, g: 1.3766361, b: 1.7207953, a: 1}
+  lightningSwordColor: {r: 1.7207953, g: 1.3766361, b: 0, a: 1}
+  shaderColorPropertyName: _SwordColor
 --- !u!1 &88088414
 GameObject:
   m_ObjectHideFlags: 0

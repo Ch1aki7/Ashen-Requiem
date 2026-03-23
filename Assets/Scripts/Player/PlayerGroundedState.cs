@@ -35,6 +35,7 @@ public class PlayerGroundedState : PlayerState
 
         if (Input.GetKeyDown(KeyCode.O) && SkillManager.Instance.oath.CanUseSkill())
         {
+            SkillManager.Instance.oath.UseSkill();
             stateMachine.ChangeState(player.oathState);
         }
 

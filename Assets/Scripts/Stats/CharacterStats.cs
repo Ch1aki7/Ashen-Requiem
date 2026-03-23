@@ -235,6 +235,17 @@ public class CharacterStats : MonoBehaviour
         }
     }
 
+    public Stat GetElementDamageStat(ElementType element)
+    {
+        switch (element)
+        {
+            case ElementType.Fire: return fireDamage;
+            case ElementType.Ice: return iceDamage;
+            case ElementType.Lightning: return thunderDamage;
+            default: return null;
+        }
+    }
+
     public void ApplyResistanceBuff(ElementType element, int modifierValue, float duration)
     {
         StartCoroutine(ResistanceBuffRoutine(element, modifierValue, duration));
@@ -251,6 +262,25 @@ public class CharacterStats : MonoBehaviour
 
         targetStat.RemoveModifier(modifierValue);
     }
+
+    #region 武器附魔协程
+    public void ApplyWeaponEnchantment(ElementType element, int modifieralue, float duration)
+    {
+        StartCoroutine(EnchantmentRoutine(element, modifieralue, duration));
+    }
+
+    private IEnumerator EnchantmentRoutine(ElementType element, int modifierValue, float duration)
+    {
+        Stat targetStat = GetElementDamageStat(element);
+        if (targetStat == null) yield break;
+
+        targetStat.AddModifier(modifierValue);
+
+        yield return new WaitForSeconds(duration);
+
+        targetStat.RemoveModifier(modifierValue);
+    }
+    #endregion
 
     #region 火焰dot协程
     public void StartIgniteDoT(float duration, float tickRate, float damagePerTick)

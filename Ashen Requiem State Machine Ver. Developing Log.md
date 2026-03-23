@@ -1150,6 +1150,158 @@ public override void Damage()
 
 封装为技能
 
+[260323]技能实现：按下技能可进行元素附魔一段时间，采用CStats协程实现，Entity类调用
+
+```
+    #region 武器附魔协程
+    public void ApplyWeaponEnchantment(ElementType element, int modifieralue, float duration)
+    {
+        StartCoroutine(EnchantmentRoutine(element, modifieralue, duration));
+    }
+
+    private IEnumerator EnchantmentRoutine(ElementType element, int modifierValue, float duration)
+    {
+        Stat targetStat = GetElementDamageStat(element);
+        if (targetStat == null) yield break;
+
+        targetStat.AddModifier(modifierValue);
+
+        yield return new WaitForSeconds(duration);
+
+        targetStat.RemoveModifier(modifierValue);
+    }
+    #endregion
+```
+
+由于写了shader，按o时切换到对应刀光
+
+默认刀光在Player ShaderGraph Color(0.909376323,1.02596307,1.05927372,0) 白
+
+切换协程在Oath_Skill实现
+
+```
+using UnityEngine;
+using UnityEngine.InputSystem.Utilities;
+using System.Collections;
+
+public class Oath_Skill : Skill
+{
+    private Player player;
+
+    private SpriteRenderer playerSpriteRenderer;
+    private Material playerMaterial;
+
+    [Header("元素附魔刀光颜色 (支持HDR发光)")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color fireSwordColor;
+
+    [ColorUsage(true, true)]
+    [SerializeField] private Color iceSwordColor;
+
+    [ColorUsage(true, true)]
+    [SerializeField] private Color lightningSwordColor;
+
+    [SerializeField] private string shaderColorPropertyName = "_SwordColor";
+
+    private Color defaultSwordColor;
+
+    // 记录当前的恢复协程，防止连续释放技能时颜色错乱
+    private Coroutine resetColorCoroutine;
+
+    private void Start()
+    {
+        player = PlayerManager.instance.player;
+
+        playerSpriteRenderer = player.GetComponentInChildren<SpriteRenderer>();
+
+        if (playerSpriteRenderer != null)
+        {
+            playerMaterial = playerSpriteRenderer.sharedMaterial;
+
+            // 这样以后即使在 Shader Graph 里换了默认颜色，这里也不用去改数字了！
+            defaultSwordColor = playerMaterial.GetColor(shaderColorPropertyName);
+        }
+    }
+
+    public override bool CanUseSkill()
+    {
+        return base.CanUseSkill();
+    }
+
+    public override void UseSkill()
+    {
+        base.UseSkill();
+
+        System.Array elements = System.Enum.GetValues(typeof(ElementType));
+        int randomIndex = Random.Range(1, elements.Length);
+        ElementType randomElement = (ElementType)elements.GetValue(randomIndex);
+
+        Debug.Log($"誓约技能发动！随机抽到的属性是: {randomElement}");
+
+        float enchantDuration = 3f;
+        player.stats.ApplyWeaponEnchantment(randomElement, 10, enchantDuration);
+
+        ChangeSwordColor(randomElement);
+
+        // 开启计时器，到期后恢复默认颜色
+        // 如果之前有还没跑完的恢复倒计时，立刻停掉它（防止新附魔被旧计时器强行恢复）
+        if (resetColorCoroutine != null)
+        {
+            StopCoroutine(resetColorCoroutine);
+        }
+        resetColorCoroutine = StartCoroutine(ResetColorAfterDelay(enchantDuration));
+    }
+
+    // --- 修改 Shader 颜色的核心方法 ---
+    private void ChangeSwordColor(ElementType element)
+    {
+        if (playerMaterial == null) return;
+
+        Color targetColor = Color.white;
+
+        switch (element)
+        {
+            case ElementType.Fire:
+                targetColor = fireSwordColor;
+                break;
+            case ElementType.Ice:
+                targetColor = iceSwordColor;
+                break;
+            case ElementType.Lightning:
+                targetColor = lightningSwordColor;
+                break;
+        }
+
+        playerSpriteRenderer.material.SetColor(shaderColorPropertyName, targetColor);
+        playerMaterial.SetColor(shaderColorPropertyName, targetColor);
+    }
+
+    private IEnumerator ResetColorAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (playerSpriteRenderer != null && playerMaterial != null)
+        {
+            playerSpriteRenderer.material.SetColor(shaderColorPropertyName, defaultSwordColor);
+            playerMaterial.SetColor(shaderColorPropertyName, defaultSwordColor);
+        }
+
+        resetColorCoroutine = null;
+    }
+
+    private void OnApplicationQuit()
+    {
+        if (playerMaterial != null)
+        {
+            // 退出游戏时恢复默认颜色
+            playerMaterial.SetColor(shaderColorPropertyName, new Color(0.909f, 1.025f, 1.059f, 0f));
+        }
+    }
+}
+```
+
+
+
 #### 镜头动画实现
 
 
@@ -2622,6 +2774,87 @@ using DG.Tweening; // 引入 DOTween
         }
     }
 ```
+
+### 技能系统重做
+
+Skill.cs
+
+### 万向斩
+
+```
+using UnityEngine;
+
+public class SlashEffect_Generator : Skill
+{
+    private Player player;
+
+    [Header("刀光设置")]
+    [Tooltip("刀光距离玩家中心的偏移距离 (半径)")]
+    [SerializeField] private float slashOffsetDistance = 0.72f; 
+    
+    [Tooltip("刀光图片的基础旋转校正度数 (0, 90, 180, -90)")]
+    [SerializeField] private float baseRotationOffset = 0f;
+
+    private void Start()
+    {
+        player = PlayerManager.instance.player;
+    }
+
+    public override bool CanUseSkill()
+    {
+        return base.CanUseSkill();
+    }
+
+    public override void UseSkill()
+    {
+        base.UseSkill();
+
+        // 1. 获取鼠标在屏幕上的坐标，转换为世界坐标 (2D游戏必备操作)
+        Vector3 mouseScreenPosition = Input.mousePosition;
+        // 把Z轴设为摄像机到玩家的距离（由于是正交相机，或者2D游戏，其实随便给个大于0的值就行）
+        mouseScreenPosition.z = Mathf.Abs(Camera.main.transform.position.z); 
+        Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
+
+        // 我们只需要 2D 平面上的位置
+        mouseWorldPosition.z = 0; 
+
+        // 2. 确定发射起点 (建议用玩家的身体中心，而不是之前的 attackCheck)
+        // 假设 player.transform.position 就是中心。如果有偏移，比如肚子，可以加个 new Vector3(0, 1f, 0)
+        Vector3 playerCenterPos = player.transform.position + new Vector3(0, 1f, 0); // 根据你的模型高度微调
+
+        // 3. 计算从玩家指向鼠标的方向向量
+        Vector3 direction = (mouseWorldPosition - playerCenterPos).normalized;
+
+        // 4. 计算 2D 旋转角度！(极其核心的公式)
+        // Mathf.Atan2(y, x) 算出弧度，再乘以 Rad2Deg 转成角度。
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        // 如果你的图片画的刀光，初始状态下(0度)是向右劈的，就不需要管。
+        // 如果它初始是向上劈的，你需要减去90度 (baseRotationOffset = -90f)。
+        angle += baseRotationOffset; 
+
+        // 5. 将计算出的角度转换成四元数 (围绕Z轴旋转)
+        Quaternion slashRotation = Quaternion.Euler(0, 0, angle);
+
+        // 6. 计算刀光的最终生成位置 (顺着鼠标方向，往外推移一段距离)
+        Vector3 slashPosition = playerCenterPos + (direction * slashOffsetDistance);
+
+        // 7. 生成刀光！
+        // 极其关键：因为是万向的，千万【不要】把它挂在 player.transform 下面当子物体！
+        // 如果你把它当了子物体，玩家走路一转身(Rotate 180度)，本来向右上劈的刀光会瞬间被带得转到左下角去！
+        GameObject newSlash = Instantiate(player.slashEffectPrefab, slashPosition, slashRotation);
+
+        // 可选：如果你希望这个万向刀光生成后，玩家翻转它依然保持方向（脱手特效），就不要设 parent
+    }
+
+    protected override void Update()
+    {
+        base.Update();
+    }
+}
+```
+
+
 
 ## 属性系统
 

@@ -14,16 +14,9 @@ public class Dash_Skill : Skill
 
     public override bool CanUseSkill()
     {
-        if (player.IsGroundDetected())
-        {
-            if (cooldownTimer <= 0)
-            {
-                cooldownTimer = cooldown;
-                return true;
-            }
-            Debug.Log("冲多了导致的");
+        if (!player.IsGroundDetected())
             return false;
-        }
-        return false;
+
+        return base.CanUseSkill();
     }
 }

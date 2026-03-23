@@ -4,13 +4,7 @@ public class Dragon_Skill : Skill
 {
     public override bool CanUseSkill()
     {
-        if (cooldownTimer <= 0)
-        {
-            cooldownTimer = cooldown;
-            return true;
-        }
-        Debug.Log("Dragon ain't awaking.");
-        return false;
+        return base.CanUseSkill();
     }
 
     public override void UseSkill()

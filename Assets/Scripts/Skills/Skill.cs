@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Skill : MonoBehaviour
 {
+    [Header("总体信息")]
     [SerializeField] protected float cooldown;
     protected float cooldownTimer;
 
@@ -13,17 +14,19 @@ public class Skill : MonoBehaviour
 
     public virtual bool CanUseSkill()
     {
-        if (cooldownTimer <= 0)
+        if (OnCoolDown())
         {
-            cooldownTimer = cooldown;
-            return true;
+            Debug.Log("技能冷却");
+            return false;
         }
-        Debug.Log("Skill is on CD.");
-        return false;
+            return true;
     }
 
     public virtual void UseSkill()
     {
 
     }
+
+    private bool OnCoolDown() => cooldownTimer > 0;
+    public void SetSkillCD() => cooldownTimer = cooldown;
 }

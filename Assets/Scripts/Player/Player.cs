@@ -105,6 +105,7 @@ public class Player : Entity
 
         if (Input.GetKeyDown(KeyCode.LeftShift) && SkillManager.Instance.dash.CanUseSkill()) 
         {
+            SkillManager.Instance.dash.SetSkillCD();
             dashDir = Input.GetAxisRaw("Horizontal");
             if (dashDir == 0)
                 dashDir = facingDir;
@@ -116,6 +117,7 @@ public class Player : Entity
     {
         if(Input.GetKeyDown(KeyCode.RightShift)&&SkillManager.Instance.dragon.CanUseSkill())
         {
+            SkillManager.Instance.dragon.SetSkillCD();
             dashDir = Input.GetAxisRaw("Horizontal");
             if (dashDir == 0)
                 dashDir = facingDir;
