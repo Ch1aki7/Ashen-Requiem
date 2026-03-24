@@ -92,6 +92,17 @@ public class Player : Entity
         stateMachine.currentState.Update();
         CheckForDashInput();
         DragonApproaching();
+
+        Slash();
+    }
+
+    private void Slash()
+    {
+        if (Input.GetKeyDown(KeyCode.Mouse0) && SkillManager.Instance.slashEffect.CanUseSkill())
+        {
+            SkillManager.Instance.slashEffect.SetSkillCD();
+            stateMachine.ChangeState(primaryAttackState);
+        }
     }
 
     public void ExitBlackhole()

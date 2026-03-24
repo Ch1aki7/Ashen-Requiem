@@ -604,7 +604,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c91b34638ae7934d9a724dd33ae553b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cooldown: 0
+  cooldown: 0.5
+  slashOffsetDistance: 1
+  baseRotationOffset: 0
 --- !u!114 &86790696
 MonoBehaviour:
   m_ObjectHideFlags: 0

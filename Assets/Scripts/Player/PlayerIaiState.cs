@@ -50,7 +50,7 @@ public class PlayerIaiState : PlayerState
             player.transform.position = (Vector3)startPosition + (Vector3)(backwardDir * backwardDistance * easeProgress);
         }
 
-        if (Input.GetKeyDown(KeyCode.Mouse0) && attackWindowFrames == 0)
+        if (Input.GetKeyDown(KeyCode.Mouse1) && attackWindowFrames == 0)
         {
             attackWindowFrames = maxAttackWindowFrames;
         }
@@ -61,7 +61,7 @@ public class PlayerIaiState : PlayerState
             
             Collider2D[] colliders = Physics2D.OverlapCircleAll(player.attackCheck.position, player.attackCheckRadius);
 
-
+            // ¹¥»÷ÅÐ¶¨
             foreach (var hit in colliders)
             {
                 if (hit.GetComponent<Enemy>() != null)

@@ -22,9 +22,6 @@ public class PlayerGroundedState : PlayerState
         if (Input.GetKeyDown(KeyCode.R) && SkillManager.Instance.blackhole.CanUseSkill())  
             stateMachine.ChangeState(player.blackholeState);
 
-        if (Input.GetKeyDown(KeyCode.Mouse0))
-            stateMachine.ChangeState(player.primaryAttackState);
-
         if (Input.GetKeyDown(KeyCode.Mouse1))
             stateMachine.ChangeState(player.iaiState);
 
@@ -36,6 +33,7 @@ public class PlayerGroundedState : PlayerState
         if (Input.GetKeyDown(KeyCode.O) && SkillManager.Instance.oath.CanUseSkill())
         {
             SkillManager.Instance.oath.UseSkill();
+            SkillManager.Instance.oath.SetSkillCD();
             stateMachine.ChangeState(player.oathState);
         }
 

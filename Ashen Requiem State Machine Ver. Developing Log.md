@@ -2781,6 +2781,49 @@ Skill.cs
 
 ### 万向斩
 
+~~原效果备份~~，已经，不需要了
+
+```
+using UnityEngine;
+
+public class SlashEffect_Generator : Skill
+{
+    private Player player;
+    private void Start()
+    {
+        player = PlayerManager.instance.player;
+    }
+
+    public override bool CanUseSkill()
+    {
+        return base.CanUseSkill();
+    }
+
+    public override void UseSkill()
+    {
+        base.UseSkill();
+
+        Quaternion slashRotation = player.transform.rotation;
+        Vector3 slashPosition = player.attackCheck.transform.position;
+        if (player.facingRight)
+            slashPosition -= new Vector3(0.72f, 0, 0);
+        else
+            slashPosition += new Vector3(0.72f, 0, 0);
+
+        GameObject newSlash = Instantiate(player.slashEffectPrefab,slashPosition,slashRotation,player.transform);
+
+    }
+
+    protected override void Update()
+    {
+        base.Update();
+    }
+
+}
+```
+
+Generator改动
+
 ```
 using UnityEngine;
 
@@ -2790,8 +2833,8 @@ public class SlashEffect_Generator : Skill
 
     [Header("刀光设置")]
     [Tooltip("刀光距离玩家中心的偏移距离 (半径)")]
-    [SerializeField] private float slashOffsetDistance = 0.72f; 
-    
+    [SerializeField] private float slashOffsetDistance = 0.72f;
+
     [Tooltip("刀光图片的基础旋转校正度数 (0, 90, 180, -90)")]
     [SerializeField] private float baseRotationOffset = 0f;
 
@@ -2809,42 +2852,48 @@ public class SlashEffect_Generator : Skill
     {
         base.UseSkill();
 
-        // 1. 获取鼠标在屏幕上的坐标，转换为世界坐标 (2D游戏必备操作)
+        // 获取鼠标在屏幕上的坐标，转换为世界坐标
         Vector3 mouseScreenPosition = Input.mousePosition;
         // 把Z轴设为摄像机到玩家的距离（由于是正交相机，或者2D游戏，其实随便给个大于0的值就行）
-        mouseScreenPosition.z = Mathf.Abs(Camera.main.transform.position.z); 
+        mouseScreenPosition.z = Mathf.Abs(Camera.main.transform.position.z);
         Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
 
-        // 我们只需要 2D 平面上的位置
-        mouseWorldPosition.z = 0; 
+        mouseWorldPosition.z = 0;
 
-        // 2. 确定发射起点 (建议用玩家的身体中心，而不是之前的 attackCheck)
-        // 假设 player.transform.position 就是中心。如果有偏移，比如肚子，可以加个 new Vector3(0, 1f, 0)
-        Vector3 playerCenterPos = player.transform.position + new Vector3(0, 1f, 0); // 根据你的模型高度微调
+        // 确定发射起点 (建议用玩家的身体中心，而不是之前的 attackCheck)
+        Vector3 playerCenterPos = player.transform.position + new Vector3(0, 1f, 0); // 根据模型高度微调
 
-        // 3. 计算从玩家指向鼠标的方向向量
+        // 计算从玩家指向鼠标的方向向量
         Vector3 direction = (mouseWorldPosition - playerCenterPos).normalized;
 
-        // 4. 计算 2D 旋转角度！(极其核心的公式)
+        // 计算 2D 旋转角度！(极其核心的公式)
         // Mathf.Atan2(y, x) 算出弧度，再乘以 Rad2Deg 转成角度。
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
 
         // 如果你的图片画的刀光，初始状态下(0度)是向右劈的，就不需要管。
         // 如果它初始是向上劈的，你需要减去90度 (baseRotationOffset = -90f)。
-        angle += baseRotationOffset; 
+        angle += baseRotationOffset;
 
-        // 5. 将计算出的角度转换成四元数 (围绕Z轴旋转)
+        // 将计算出的角度转换成四元数 (围绕Z轴旋转)
         Quaternion slashRotation = Quaternion.Euler(0, 0, angle);
 
-        // 6. 计算刀光的最终生成位置 (顺着鼠标方向，往外推移一段距离)
+        // 计算刀光的最终生成位置 (顺着鼠标方向，往外推移一段距离)
         Vector3 slashPosition = playerCenterPos + (direction * slashOffsetDistance);
 
-        // 7. 生成刀光！
+        // 生成刀光！
         // 极其关键：因为是万向的，千万【不要】把它挂在 player.transform 下面当子物体！
-        // 如果你把它当了子物体，玩家走路一转身(Rotate 180度)，本来向右上劈的刀光会瞬间被带得转到左下角去！
         GameObject newSlash = Instantiate(player.slashEffectPrefab, slashPosition, slashRotation);
 
-        // 可选：如果你希望这个万向刀光生成后，玩家翻转它依然保持方向（脱手特效），就不要设 parent
+        SlashEffect_HitBox hitBox = newSlash.GetComponent<SlashEffect_HitBox>();
+
+        if (hitBox != null)
+        {
+            hitBox.SetupSlash(player.stats);
+        }
+        else
+        {
+            Debug.LogWarning("你的刀光预制体上没有挂载 SlashEffect_HitBox 脚本！伤害将无法生效。");
+        }
     }
 
     protected override void Update()
@@ -2854,7 +2903,61 @@ public class SlashEffect_Generator : Skill
 }
 ```
 
+重做刀光碰撞箱新建SlashEffect_HitBox.cs
 
+```
+using UnityEngine;
+
+public class SlashEffect_HitBox : MonoBehaviour
+{
+    private CharacterStats playerStats;
+
+    [Header("刀光伤害倍率")]
+    [Tooltip("如果是 1，则造成和普攻一样的伤害；如果是 1.5，则造成 150% 的伤害")]
+    [SerializeField] private float damageMultiplier = 1.0f;
+
+    public void SetupSlash(CharacterStats _playerStats)
+    {
+        playerStats = _playerStats;
+    }
+
+    // 关键：当刀光碰到任何有 Collider 的物体时触发
+    // 前提条件：
+    // 1. 刀光预制体上必须挂载一个 Collider2D 组件（比如 BoxCollider2D 或 PolygonCollider2D）
+    // 2. 该 Collider2D 必须勾选 "Is Trigger"！
+    // 3. 刀光预制体上最好挂载一个 Rigidbody2D，把 Body Type 设为 Kinematic（运动学），否则无法触发检测。
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        EnemyStats enemyStats = collision.GetComponent<EnemyStats>();
+        if (enemyStats != null)
+        {
+            // 防止报空指针（如果生成的瞬间还没传过来 stats）
+            if (playerStats == null) return;
+
+            playerStats.DoDamage(enemyStats);
+            playerStats.DoMagicalDamage(enemyStats);
+
+            Enemy enemy = collision.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                enemy.Damage();
+
+                AttackScene.Instance.HitPause(PlayerManager.instance.player.hitPause / 2);
+                AttackScene.Instance.CameraShake(PlayerManager.instance.player.shakeTime, PlayerManager.instance.player.hitMagnitude);
+            }
+
+            // 穿透效果开关
+            // Destroy(gameObject); 
+        }
+    }
+}
+```
+
+这样会导致和原先的PlayerAnimationTrigger双判，导致近距离的数值膨胀
+
+[260323]~~对AnimationTrigger中的Collider检测进行移除~~，对Attack动画的Trigger进行移除，保留代码
+
+迁移居合按键，如今进入状态后按下右键进入判定帧
 
 ## 属性系统
 
@@ -3837,7 +3940,12 @@ promt合集
   > **英文后缀:** 2D game background, side-scrolling platformer, horizontal layout, distinct depth layers (foreground, midground, background), parallax ready, flat layers, dark pixel art, 16-bit style, Castlevania style, high quality, masterpiece --ar 16:9 --stylize 150 --v 6.0
   > **中文解释:** 2D游戏背景，横版跳跃游戏，水平布局，明显的深度层级（前景、中景、远景），视差准备，扁平图层，暗黑像素风，16位机风格，恶魔城风格，高质量，杰作（比例建议16:9或更长的21:9）。
 
-  
 
 
+
+## Git管理
+
+[260324]git库损坏
+
+![image-20260324103612422](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260324103612422.png)
 
