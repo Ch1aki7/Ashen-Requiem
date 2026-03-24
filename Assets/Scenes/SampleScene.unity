@@ -498,6 +498,7 @@ GameObject:
   - component: {fileID: 86790694}
   - component: {fileID: 86790695}
   - component: {fileID: 86790696}
+  - component: {fileID: 86790697}
   m_Layer: 0
   m_Name: SkillManager
   m_TagString: Untagged
@@ -624,6 +625,28 @@ MonoBehaviour:
   iceSwordColor: {r: 0.22943936, g: 1.3766361, b: 1.7207953, a: 1}
   lightningSwordColor: {r: 1.7207953, g: 1.3766361, b: 0, a: 1}
   shaderColorPropertyName: _SwordColor
+--- !u!114 &86790697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 86790688}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3e8d34699b9bf840be7cb9cad0fd219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpatialCleaveSkill
+  cooldown: 0
+  screenSliceMaterial: {fileID: 2100000, guid: 487fad62c28caff49a8d33d40e72c914, type: 2}
+  sliceDuration: 1.5
+  maxOffset: 0.05
+  sliceAngle: 30
+  damageThickness: 1
+  massiveDamage: 9999
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!1 &88088414
 GameObject:
   m_ObjectHideFlags: 0

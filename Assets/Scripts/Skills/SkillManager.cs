@@ -12,6 +12,7 @@ public class SkillManager : MonoBehaviour
     public Dragon_Skill dragon { get; private set; }
     public SlashEffect_Generator slashEffect { get; private set; }
     public Oath_Skill oath {  get; private set; }
+    public SpatialCleaveSkill spatialCleave { get; private set; }
     private void Awake()
     {
         if (Instance != null)
@@ -28,5 +29,6 @@ public class SkillManager : MonoBehaviour
         dragon = GetComponent<Dragon_Skill>();
         slashEffect=GetComponent<SlashEffect_Generator>();
         oath = GetComponent<Oath_Skill>();
+        spatialCleave = GetComponent<SpatialCleaveSkill>();
     }
 }

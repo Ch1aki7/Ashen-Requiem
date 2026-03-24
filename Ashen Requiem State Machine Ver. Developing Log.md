@@ -2959,6 +2959,122 @@ public class SlashEffect_HitBox : MonoBehaviour
 
 迁移居合按键，如今进入状态后按下右键进入判定帧
 
+### 次元斩
+
+要写一个**全屏材质（Fullscreen Material）**，直接把摄像机拍到的整个画面“剪开并错位
+
+最终代码
+
+```
+using UnityEngine;
+using System.Collections;
+
+public class SpatialCleaveSkill : Skill
+{
+    [Header("视觉材质控制")]
+    public Material screenSliceMaterial; // 全屏材质
+    public float sliceDuration = 1.5f;   // 画面裂开持续多久
+    public float maxOffset = 0.05f;      // 画面最大错位距离
+
+    [Header("物理与伤害判定")]
+    public float sliceAngle = 45f;       // 切割角度
+    public float damageThickness = 2f;   // 刀光的真实物理厚度
+    public int massiveDamage = 9999;     // 空间切割的真实伤害
+    public LayerMask enemyLayer;         // 敌人的图层
+
+    private bool isSlicing = false;
+
+    public override bool CanUseSkill()
+    {
+        if (isSlicing)
+        {
+            return false;
+        }
+        return base.CanUseSkill();
+    }
+
+    public override void UseSkill()
+    {
+        base.UseSkill();
+        StartCoroutine(ExecuteSpatialCleave());
+    }
+
+    private IEnumerator ExecuteSpatialCleave()
+    {
+        isSlicing = true;
+
+        Vector3 mousePos = Input.mousePosition;
+
+        Vector2 shaderCenter = new Vector2(mousePos.x / Screen.width, mousePos.y / Screen.height);
+
+        mousePos.z = Mathf.Abs(Camera.main.transform.position.z);
+        Vector2 worldCenter = Camera.main.ScreenToWorldPoint(mousePos);
+
+        screenSliceMaterial.SetFloat("_SliceAngle", sliceAngle);
+        screenSliceMaterial.SetVector("_SliceCenter", shaderCenter);
+
+        float angleRad = sliceAngle * Mathf.Deg2Rad;
+        Vector2 offsetDir = new Vector2(-Mathf.Sin(angleRad), Mathf.Cos(angleRad));
+
+        screenSliceMaterial.SetVector("_SliceOffset", offsetDir * maxOffset);
+        screenSliceMaterial.SetColor("_EdgeGlowColor", Color.cyan * 4f);
+
+        Vector2 boxSize = new Vector2(50f, damageThickness);
+
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(
+            worldCenter,
+            boxSize,
+            sliceAngle,
+            Vector2.zero,
+            0f,
+            enemyLayer
+        );
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            EnemyStats enemy = hit.collider.GetComponent<EnemyStats>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(massiveDamage);
+            }
+        }
+
+        float timer = 0f;
+        while (timer < sliceDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / sliceDuration;
+
+            Vector2 currentOffset = Vector2.Lerp(offsetDir * maxOffset, Vector2.zero, progress);
+            Color currentColor = Color.Lerp(Color.cyan * 4f, Color.black, progress);
+
+            screenSliceMaterial.SetVector("_SliceOffset", currentOffset);
+            screenSliceMaterial.SetColor("_EdgeGlowColor", currentColor);
+
+            yield return null;
+        }
+
+        screenSliceMaterial.SetVector("_SliceOffset", Vector2.zero);
+        screenSliceMaterial.SetColor("_EdgeGlowColor", Color.black);
+        isSlicing = false;
+    }
+
+    // 在 Scene 窗口画出一条红线，方便你调试切割位置和厚度
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Vector3 center = Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+        center.z = 0;
+
+        // 画出切割线的方向
+        float angleRad = sliceAngle * Mathf.Deg2Rad;
+        Vector3 dir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0) * 15f;
+
+        Gizmos.DrawLine(center - dir, center + dir);
+    }
+}
+```
+
 ## 属性系统
 
 新建
@@ -3927,7 +4043,51 @@ extra：防止底色影响过大，首先将3个黑白纹理使用one minus反�
 
 <img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20250630124611458.png" alt="image-20250630124611458" style="zoom:67%;" />
 
+### 次元斩
 
+在 Project 窗口右键，选择 **Create -> Shader Graph -> URP -> Fullscreen Shader Graph**（如果你用的是普通 2D，选 Unlit Shader Graph 也可以，稍后挂载材质）。命名为 ScreenSliceShader。
+
+**创建黑板变量（Properties）**：
+
+_SliceAngle (Float)：切割角度（0~360）。
+
+_SliceOffset (Vector2)：切割后的画面错位距离（比如 (0.05, -0.05)，全屏偏移通常很小）。
+
+_EdgeGlowColor (Color, HDR)：裂口发光颜色。
+
+_EdgeWidth (Float)：裂缝宽度（比如 0.005）。
+
+#### Shader Graph 连线逻辑
+
+1. **获取屏幕坐标**：创建一个 Screen Position 节点。
+2. **计算旋转分割线**：把 Screen Position 连入 Rotate 节点（Center 填 (0.5, 0.5) 屏幕正中心，Rotation 接 _SliceAngle，单位 Degrees）。取出 Rotate 输出的 **R 通道**（也就是 X 轴）。
+3. **区分画面的两半（Mask）**：把 R 通道连入 Step 节点（Edge 填 0.5）。此时你得到了一个非黑即白的遮罩：白色代表被切开需要移动的那半边屏幕。
+4. **施加全屏偏移**：把 Step 的输出 Multiply (乘) _SliceOffset。把相乘的结果 Add (加) 到最原始的 Screen Position 节点上。
+5. **采样真实的屏幕画面**：创建一个 URP Sample Buffer 节点（选择 BlitSource，这是摄像机拍到的画面）。把刚才加过偏移量的坐标，连入它的 UV 输入口。*(至此，画面错位已经完成！)*
+6. **制作裂缝发光线**：回到 R 通道，用它 Subtract (减去) 0.5，再接一个 Absolute (绝对值)。接一个 Step 节点（Edge 接 _EdgeWidth）。然后用 One Minus (1 - x) 反转。把结果 Multiply (乘) 你的发光色 _EdgeGlowColor。
+7. **最终输出**：把错位的屏幕画面，Add (加) 上发光线。连入 Fragment 节点的 Base Color。保存！
+
+![image-20260324135427148](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260324135427148.png)
+
+#### 应用全屏特效 (在游戏中挂载)
+
+1. 在 Project 中右键这个 Shader，选择 **Create -> Material**，命名为 ScreenSliceMat。
+
+2. 将这个材质添加到你的摄像机后期处理中（如果你用 URP，可以通过 Renderer Feature 里的 Full Screen Pass Renderer Feature 添加它）。
+
+3. ![image-20260324140159262](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260324140159262.png)
+
+4. 封装为技能后效果
+
+   <img src="Ashen Requiem State Machine Ver. Developing Log.assets/image-20260324145303829.png" alt="image-20260324145303829" style="zoom:67%;" />
+
+   修改为以鼠标为中心
+
+   新增一个 Vector2 类型的变量，命名为 **_SliceCenter**。
+
+   **修改连线**：找到那个 **Rotate** 节点。将 **_SliceCenter** 连接到 Rotate 节点的 **Center** 输入口。（*之前我们这里填的是 0.5, 0.5*）。
+
+5. 完善脚本后，可以根据鼠标位置做出偏移
 
 ## 动画更新
 

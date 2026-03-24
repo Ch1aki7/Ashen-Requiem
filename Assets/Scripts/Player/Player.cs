@@ -25,6 +25,7 @@ public class Player : Entity
     [Header("MODE")]
     public bool GOD = false;
 
+    private SkillManager skillManager;
 
     #region States
     public PlayerStateMachine stateMachine { get; private set; }
@@ -56,6 +57,7 @@ public class Player : Entity
     {
         base.Awake();
         stateMachine = new PlayerStateMachine();
+        skillManager = SkillManager.Instance;
 
         idleState = new PlayerIdleState(this, stateMachine, "Idle");
         moveState = new PlayerMoveState(this, stateMachine, "Move");
@@ -94,6 +96,13 @@ public class Player : Entity
         DragonApproaching();
 
         Slash();
+        if (Input.GetKeyDown(KeyCode.V) && skillManager.spatialCleave.CanUseSkill())
+        {
+            skillManager.spatialCleave.SetSkillCD();
+
+            stateMachine.ChangeState(primaryAttackState);
+            skillManager.spatialCleave.UseSkill();
+        }
     }
 
     private void Slash()
