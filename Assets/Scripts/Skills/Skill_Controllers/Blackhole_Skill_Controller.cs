@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -47,8 +46,15 @@ public class Blackhole_Skill_Controller : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            DestroyKeys();
-            canAttack = true;
+            if (targets.Count <= 0)
+            {
+                Debug.LogWarning("Press the key shown above an enemy before starting shadow attacks.");
+            }
+            else
+            {
+                DestroyKeys();
+                canAttack = true;
+            }
         }
 
         ShadowAttackLogic();
@@ -69,6 +75,9 @@ public class Blackhole_Skill_Controller : MonoBehaviour
 
     private void ShadowAttackLogic()
     {
+        if (targets.Count <= 0)
+            return;
+
         if (shadowAttackTimer < 0 && canAttack)
         {
             shadowAttackTimer = shadowAttackCD;

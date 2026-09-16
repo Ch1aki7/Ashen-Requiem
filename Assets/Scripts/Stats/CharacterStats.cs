@@ -4,6 +4,14 @@ using System.Collections;
 
 public class CharacterStats : MonoBehaviour
 {
+    public ElementType LastElementalBurst { get; private set; } = ElementType.None;
+    public int ElementalBurstCount { get; private set; }
+
+    public void RecordElementalBurst(ElementType element)
+    {
+        LastElementalBurst = element;
+        ElementalBurstCount++;
+    }
     public Stat_SetupSO defaultStatSetup;
 
     [Header("Major Stats")]

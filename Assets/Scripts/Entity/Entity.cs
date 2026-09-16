@@ -63,6 +63,7 @@ public class Entity : MonoBehaviour
             if(stats.curShockCharge >= stats.maxShockCharge)
             {
                 fx.ThunderStrike();
+                stats.RecordElementalBurst(ElementType.Lightning);
                 stats.TakeDamage(200);
                 stats.curShockCharge = 0;
             }
@@ -74,6 +75,7 @@ public class Entity : MonoBehaviour
             if(stats.curFreezeCharge >= stats.maxFreezeCharge)
             {
                 fx.IceBurst();
+                stats.RecordElementalBurst(ElementType.Ice);
                 stats.TakeDamage(100);
                 stats.ApplyResistanceBuff(ElementType.Fire, 50, 5f);
                 stats.curFreezeCharge = 0;
@@ -86,6 +88,7 @@ public class Entity : MonoBehaviour
             if(stats.curBurnCharge >= stats.maxBurnCharge)
             {
                 fx.FireBurning();
+                stats.RecordElementalBurst(ElementType.Fire);
                 stats.StartIgniteDoT(5f, 1f, 20f);
                 stats.curBurnCharge = 0;
             }
