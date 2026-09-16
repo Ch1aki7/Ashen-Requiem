@@ -11547,7 +11547,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialGuide
   player: {fileID: 1035952195}
   enemy: {fileID: 1063815263}
-  chineseFont: {fileID: 11400000, guid: f0251d64309ff724787bf123cb9b7be8, type: 2}
+  chineseFont: {fileID: 11400000, guid: 17db3000df17f4d4eb1b0b3e174a60a9, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
