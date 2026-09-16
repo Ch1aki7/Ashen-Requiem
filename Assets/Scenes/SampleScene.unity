@@ -641,7 +641,13 @@ MonoBehaviour:
   screenSliceMaterial: {fileID: 2100000, guid: 487fad62c28caff49a8d33d40e72c914, type: 2}
   sliceDuration: 1.5
   maxOffset: 0.05
+  anticipationDuration: 0.08
+  ruptureHoldDuration: 0.14
+  fractureWidth: 0.007
+  chromaticAberration: 1.1
+  jitterAmount: 0.0025
   sliceAngle: 30
+  angleRandomRange: 180
   damageThickness: 1
   massiveDamage: 9999
   enemyLayer:

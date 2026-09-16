@@ -1,32 +1,55 @@
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SpatialCleaveSkill : Skill
 {
-    [Header("ÊÓ¾õ²ÄÖÊ¿ØÖÆ")]
-    public Material screenSliceMaterial;
-    public float sliceDuration = 1.2f;
-    public float maxOffset = 0.06f;
+    [Header("ç©ºé—´è£‚éš™è¡¨ç°")]
+    [SerializeField] private Material screenSliceMaterial;
+    [SerializeField, Min(0.2f)] private float sliceDuration = 1.2f;
+    [SerializeField, Range(0.005f, 0.12f)] private float maxOffset = 0.06f;
+    [SerializeField, Range(0.02f, 0.2f)] private float anticipationDuration = 0.08f;
+    [SerializeField, Range(0.04f, 0.3f)] private float ruptureHoldDuration = 0.12f;
+    [SerializeField, Range(0.001f, 0.02f)] private float fractureWidth = 0.005f;
+    [SerializeField, Range(0f, 2f)] private float chromaticAberration = 0.9f;
+    [SerializeField, Range(0f, 0.01f)] private float jitterAmount = 0.0025f;
 
-    [Header("ÎïÀíÓëÉËº¦ÅĞ¶¨")]
-    public float baseSliceAngle = 45f;   // »ù´¡½Ç¶È
-    public float angleRandomRange = 180f; // Ëæ»ú²¨¶¯·¶Î§ (ÉèÖÃÎª180ÔòÈ«ÏòËæ»ú)
-    public float damageThickness = 2.5f;
-    public int massiveDamage = 9999;
-    public LayerMask enemyLayer;
+    [Header("æ”»å‡»ä¸ä¼¤å®³åˆ¤å®š")]
+    [FormerlySerializedAs("sliceAngle")]
+    [SerializeField] private float baseSliceAngle = 45f;
+    [SerializeField, Range(0f, 180f)] private float angleRandomRange = 180f;
+    [SerializeField, Min(0.1f)] private float damageThickness = 2.5f;
+    [SerializeField] private int massiveDamage = 9999;
+    [SerializeField] private LayerMask enemyLayer;
 
-    private bool isSlicing = false;
+    private bool isSlicing;
     private Camera mainCam;
 
-    // ĞÔÄÜÓÅ»¯£ºÌáÇ°»º´æ Shader ÊôĞÔ ID£¬±ÜÃâÃ¿Ö¡½øĞĞ×Ö·û´®Ñ°Ö·
     private static readonly int SliceAngleID = Shader.PropertyToID("_SliceAngle");
     private static readonly int SliceCenterID = Shader.PropertyToID("_SliceCenter");
     private static readonly int SliceOffsetID = Shader.PropertyToID("_SliceOffset");
     private static readonly int EdgeColorID = Shader.PropertyToID("_EdgeGlowColor");
+    private static readonly int EffectStrengthID = Shader.PropertyToID("_EffectStrength");
+    private static readonly int FractureWidthID = Shader.PropertyToID("_FractureWidth");
+    private static readonly int ChromaticAberrationID = Shader.PropertyToID("_ChromaticAberration");
+    private static readonly int JitterID = Shader.PropertyToID("_Jitter");
+    private static readonly int SliceSeedID = Shader.PropertyToID("_SliceSeed");
 
-    private void Start()
+    private static readonly Color RuptureColor = new Color(1.8f, 5.5f, 8f, 1f);
+    private static readonly Color SettleColor = new Color(0.1f, 1.8f, 3.5f, 1f);
+
+    private void Awake()
     {
         mainCam = Camera.main;
+        ResetVisual();
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        ResetVisual();
+        isSlicing = false;
     }
 
     public override bool CanUseSkill()
@@ -37,93 +60,136 @@ public class SpatialCleaveSkill : Skill
     public override void UseSkill()
     {
         base.UseSkill();
-        StartCoroutine(ExecuteSpatialCleave());
+
+        if (!isSlicing)
+            StartCoroutine(ExecuteSpatialCleave());
     }
 
     private IEnumerator ExecuteSpatialCleave()
     {
         isSlicing = true;
 
-        // 1. »ñÈ¡Ëæ»ú½Ç¶È
-        // Èç¹ûÏëÍêÈ«Ëæ»ú£¬ÓÃ Random.Range(0, 360)
-        float currentAngle = baseSliceAngle + Random.Range(-angleRandomRange, angleRandomRange);
+        if (mainCam == null)
+            mainCam = Camera.main;
 
-        // 2. ×ø±ê¾«È·»»Ëã
-        Vector3 mousePos = Input.mousePosition;
-
-        // ĞŞÕıÃ¤Çø£ºÈ·±£ Shader ×ø±ê¾«È·¶Ô×¼ÏñËØ
-        Vector2 shaderCenter = new Vector2(mousePos.x / Screen.width, mousePos.y / Screen.height);
-
-        // ÎïÀí×ø±ê×ª»»£ºZÖá±ØĞëÎªÉãÏñ»úµ½Æ½ÃæµÄ¾àÀë£¬·ñÔò»áÓĞÊÓ²îÆ«ÒÆ
-        float camDist = Mathf.Abs(mainCam.transform.position.z);
-        Vector2 worldCenter = mainCam.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, camDist));
-
-        // 3. Ó¦ÓÃ Shader Ğ§¹û
-        screenSliceMaterial.SetFloat(SliceAngleID, currentAngle);
-        screenSliceMaterial.SetVector(SliceCenterID, shaderCenter);
-
-        float angleRad = currentAngle * Mathf.Deg2Rad;
-        // ·¨Ïß·½Ïò£º´¹Ö±ÓÚÇĞ¸îÏßµÄ·½Ïò
-        Vector2 offsetDir = new Vector2(-Mathf.Sin(angleRad), Mathf.Cos(angleRad));
-
-        // ³õÊ¼ËºÁÑ
-        screenSliceMaterial.SetVector(SliceOffsetID, offsetDir * maxOffset);
-        screenSliceMaterial.SetColor(EdgeColorID, Color.cyan * 5f); // ÔöÇ¿ÁÁ¶È
-
-        // 4. ÎïÀíÅĞ¶¨
-        // Ôö¼ÓÅĞ¶¨¿ò³¤¶È£¨50->100£©ÒÔ³¹µ×¸²¸ÇËùÓĞÆÁÄ»×İºá±È£¬Ïû³ı±ßÔµÃ¤Çø
-        Vector2 boxSize = new Vector2(100f, damageThickness);
-
-        RaycastHit2D[] hits = Physics2D.BoxCastAll(
-            worldCenter,
-            boxSize,
-            currentAngle,
-            Vector2.zero,
-            0f,
-            enemyLayer
-        );
-
-        // 5. ´¦ÀíÉËº¦Óë·´À¡
-        if (hits.Length > 0)
+        if (mainCam == null || screenSliceMaterial == null)
         {
-            // ¶ÙÖ¡ÓëÕğ¶¯
-            AttackScene.Instance.HitPause(10);
-            AttackScene.Instance.CameraShake(0.2f, 3f);
-
-            foreach (RaycastHit2D hit in hits)
-            {
-                EnemyStats enemy = hit.collider.GetComponent<EnemyStats>();
-                if (enemy != null)
-                {
-                    enemy.TakeDamage(massiveDamage);
-                    // ¶îÍâĞ§¹û£ºË³×ÅÇĞ¿Ú·½ÏòÍÆ¿ªµĞÈË
-                    if (hit.collider.TryGetComponent(out Rigidbody2D rb))
-                        rb.AddForce(offsetDir * 5f, ForceMode2D.Impulse);
-                }
-            }
+            Debug.LogError("æ¬¡å…ƒæ–©ç¼ºå°‘ä¸»æ‘„åƒæœºæˆ–å…¨å±è£‚éš™æè´¨ã€‚", this);
+            isSlicing = false;
+            yield break;
         }
 
-        // 6. ÓúºÏ¶¯»­ (Æ½»¬ÇúÏß)
-        float timer = 0f;
-        while (timer < sliceDuration)
+        float currentAngle = baseSliceAngle + Random.Range(-angleRandomRange, angleRandomRange);
+        Vector3 mousePosition = Input.mousePosition;
+        Vector2 shaderCenter = new Vector2(
+            mousePosition.x / Mathf.Max(Screen.width, 1),
+            mousePosition.y / Mathf.Max(Screen.height, 1));
+
+        float cameraDistance = Mathf.Abs(mainCam.transform.position.z);
+        Vector2 worldCenter = mainCam.ScreenToWorldPoint(
+            new Vector3(mousePosition.x, mousePosition.y, cameraDistance));
+
+        float angleRadians = currentAngle * Mathf.Deg2Rad;
+        Vector2 offsetDirection = new Vector2(-Mathf.Sin(angleRadians), Mathf.Cos(angleRadians));
+
+        screenSliceMaterial.SetFloat(SliceAngleID, currentAngle);
+        screenSliceMaterial.SetVector(SliceCenterID, shaderCenter);
+        screenSliceMaterial.SetFloat(FractureWidthID, fractureWidth);
+        screenSliceMaterial.SetFloat(ChromaticAberrationID, chromaticAberration);
+        screenSliceMaterial.SetFloat(SliceSeedID, Random.Range(0f, 1000f));
+
+        float elapsed = 0f;
+        while (elapsed < anticipationDuration)
         {
-            timer += Time.deltaTime;
-            // Ê¹ÓÃÆ½»¬²åÖµ (½µËÙ»Ø¹é)
-            float t = timer / sliceDuration;
-            float curve = 1 - Mathf.Pow(1 - t, 3); // EaseOut Ğ§¹û
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / anticipationDuration);
+            float pulse = Mathf.SmoothStep(0f, 1f, t);
 
-            Vector2 currentOffset = Vector2.Lerp(offsetDir * maxOffset, Vector2.zero, curve);
-            Color currentColor = Color.Lerp(Color.cyan * 5f, Color.black, curve);
-
-            screenSliceMaterial.SetVector(SliceOffsetID, currentOffset);
-            screenSliceMaterial.SetColor(EdgeColorID, currentColor);
-
+            screenSliceMaterial.SetFloat(EffectStrengthID, pulse * 0.18f);
+            screenSliceMaterial.SetVector(SliceOffsetID, offsetDirection * (maxOffset * pulse * 0.08f));
+            screenSliceMaterial.SetColor(EdgeColorID, SettleColor * (0.15f + pulse * 0.25f));
             yield return null;
         }
 
-        // ÖØÖÃ
-        screenSliceMaterial.SetVector(SliceOffsetID, Vector2.zero);
-        screenSliceMaterial.SetColor(EdgeColorID, Color.black);
+        ApplyDamage(worldCenter, currentAngle, offsetDirection);
+
+        AttackScene attackScene = AttackScene.Instance;
+        if (attackScene != null)
+        {
+            attackScene.HitPause(10);
+            attackScene.CameraShake(0.22f, 3.2f);
+        }
+
+        elapsed = 0f;
+        while (elapsed < ruptureHoldDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / ruptureHoldDuration);
+            float pulse = 1f + Mathf.Sin(t * Mathf.PI * 5f) * 0.08f;
+            Vector2 jitter = Random.insideUnitCircle * jitterAmount * (1f - t * 0.35f);
+
+            screenSliceMaterial.SetFloat(EffectStrengthID, 1f);
+            screenSliceMaterial.SetVector(SliceOffsetID, offsetDirection * (maxOffset * pulse));
+            screenSliceMaterial.SetVector(JitterID, jitter);
+            screenSliceMaterial.SetColor(EdgeColorID, Color.Lerp(RuptureColor, SettleColor * 2f, t));
+            yield return null;
+        }
+
+        float settleDuration = Mathf.Max(0.08f, sliceDuration - anticipationDuration - ruptureHoldDuration);
+        elapsed = 0f;
+        while (elapsed < settleDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / settleDuration);
+            float decay = Mathf.Pow(1f - t, 2.2f);
+            float recoil = 1f + Mathf.Sin(t * Mathf.PI * 3f) * 0.12f * (1f - t);
+            Vector2 jitter = Random.insideUnitCircle * jitterAmount * decay;
+
+            screenSliceMaterial.SetFloat(EffectStrengthID, decay);
+            screenSliceMaterial.SetVector(SliceOffsetID, offsetDirection * (maxOffset * decay * recoil));
+            screenSliceMaterial.SetVector(JitterID, jitter);
+            screenSliceMaterial.SetColor(EdgeColorID, SettleColor * decay);
+            yield return null;
+        }
+
+        ResetVisual();
         isSlicing = false;
+    }
+
+    private void ApplyDamage(Vector2 worldCenter, float angle, Vector2 knockbackDirection)
+    {
+        Vector2 boxSize = new Vector2(100f, damageThickness);
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(
+            worldCenter,
+            boxSize,
+            angle,
+            Vector2.zero,
+            0f,
+            enemyLayer);
+
+        HashSet<EnemyStats> damagedEnemies = new HashSet<EnemyStats>();
+        foreach (RaycastHit2D hit in hits)
+        {
+            EnemyStats enemy = hit.collider.GetComponentInParent<EnemyStats>();
+            if (enemy == null || !damagedEnemies.Add(enemy))
+                continue;
+
+            enemy.TakeDamage(massiveDamage);
+
+            Rigidbody2D body = hit.rigidbody;
+            if (body != null)
+                body.AddForce(knockbackDirection * 5f, ForceMode2D.Impulse);
+        }
+    }
+
+    private void ResetVisual()
+    {
+        if (screenSliceMaterial == null)
+            return;
+
+        screenSliceMaterial.SetFloat(EffectStrengthID, 0f);
+        screenSliceMaterial.SetVector(SliceOffsetID, Vector4.zero);
+        screenSliceMaterial.SetVector(JitterID, Vector4.zero);
+        screenSliceMaterial.SetColor(EdgeColorID, Color.black);
     }
 }

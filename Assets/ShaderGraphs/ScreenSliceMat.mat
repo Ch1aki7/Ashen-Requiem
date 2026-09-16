@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ScreenSliceMat
-  m_Shader: {fileID: -6465566751694194690, guid: 7ec155a504e81ef48a1c4f26089a31b7, type: 3}
+  m_Shader: {fileID: 4800000, guid: b8246ef2e0d8469d98fe98fc04661d3f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
