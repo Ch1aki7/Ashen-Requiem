@@ -75,6 +75,8 @@ public class Blackhole_Skill_Controller : MonoBehaviour
 
     private void ShadowAttackLogic()
     {
+        targets.RemoveAll(target => target == null);
+
         if (targets.Count <= 0)
             return;
 
@@ -89,6 +91,13 @@ public class Blackhole_Skill_Controller : MonoBehaviour
                 xOffset = 2;
             else
                 xOffset = -2;
+            if (SkillManager.Instance == null || SkillManager.Instance.shadow == null)
+            {
+                Debug.LogWarning("Blackhole cannot create a shadow because the shadow skill is missing.", this);
+                canAttack = false;
+                return;
+            }
+
             SkillManager.Instance.shadow.CreateShadowNoIai(targets[randomIndex], new Vector3(xOffset, 0));
             amountOfAttacks--;
 
@@ -110,6 +119,7 @@ public class Blackhole_Skill_Controller : MonoBehaviour
         {
             Destroy(createdKey[i]);
         }
+        createdKey.Clear();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -151,6 +161,10 @@ public class Blackhole_Skill_Controller : MonoBehaviour
         newKeyScript.SetupKey(choosenKey, collision.transform, this);
     }
 
-    public void AddEnemyToList(Transform _enemyTransform) => targets.Add(_enemyTransform);
+    public void AddEnemyToList(Transform _enemyTransform)
+    {
+        if (_enemyTransform != null && !targets.Contains(_enemyTransform))
+            targets.Add(_enemyTransform);
+    }
 
 }

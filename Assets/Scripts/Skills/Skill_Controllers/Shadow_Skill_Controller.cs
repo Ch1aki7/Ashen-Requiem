@@ -1,4 +1,4 @@
-using System;
+using System.Collections;
 using UnityEngine;
 
 public class Shadow_Skill_Controller : MonoBehaviour
@@ -12,7 +12,11 @@ public class Shadow_Skill_Controller : MonoBehaviour
     private float shadowTimer;
     [SerializeField] private Transform attackCheck;
     [SerializeField] private float attackCheckRadius;
+    [SerializeField] private float slashFireDelay = 0.2f;
     private Transform closestEnemy;
+    private Transform assignedTarget;
+    private bool useSlashProjectile;
+    private bool slashFired;
 
     private void Awake()
     {
@@ -33,6 +37,7 @@ public class Shadow_Skill_Controller : MonoBehaviour
     }
     public void SetupShadow(Transform _newTransform, bool _canAttack,Vector3 _offset)
     {
+        useSlashProjectile = false;
         if (_canAttack)
         {
             anim.SetInteger("AttackMode", UnityEngine.Random.Range(1, 3));
@@ -46,9 +51,14 @@ public class Shadow_Skill_Controller : MonoBehaviour
 
     public void SetupShadowNoIai(Transform _newTransform, bool _canAttack, Vector3 _offset)
     {
+        assignedTarget = _newTransform;
+        useSlashProjectile = true;
+        slashFired = false;
+
         if (_canAttack)
         {
             anim.SetInteger("AttackMode", 1);
+            StartCoroutine(FireSlashAtAttackFrame());
         }
 
         transform.position = _newTransform.position + _offset;
@@ -63,6 +73,12 @@ public class Shadow_Skill_Controller : MonoBehaviour
     }
     private void AttackTrigger()
     {
+        if (useSlashProjectile)
+        {
+            FireSlashAtAssignedTarget();
+            return;
+        }
+
         Collider2D[] colliders = Physics2D.OverlapCircleAll(attackCheck.position, attackCheckRadius);
 
 
@@ -71,6 +87,31 @@ public class Shadow_Skill_Controller : MonoBehaviour
             if (hit.GetComponent<Enemy>() != null)
                 hit.GetComponent<Enemy>().Damage();
         }
+    }
+
+    private void FireSlashAtAssignedTarget()
+    {
+        if (slashFired)
+            return;
+
+        Transform target = assignedTarget != null ? assignedTarget : closestEnemy;
+        SlashEffect_Generator slashGenerator = SkillManager.Instance != null
+            ? SkillManager.Instance.slashEffect
+            : null;
+
+        if (target == null || slashGenerator == null)
+        {
+            Debug.LogWarning("黑洞影子缺少攻击目标或刀光生成器。", this);
+            return;
+        }
+
+        slashFired = slashGenerator.CreateSlashTowards(transform.position, target.position) != null;
+    }
+
+    private IEnumerator FireSlashAtAttackFrame()
+    {
+        yield return new WaitForSeconds(slashFireDelay);
+        FireSlashAtAssignedTarget();
     }
 
     private void IaiTrigger()
@@ -92,6 +133,13 @@ public class Shadow_Skill_Controller : MonoBehaviour
 
     private void FacingClosestTarget()
     {
+        if (assignedTarget != null)
+        {
+            closestEnemy = assignedTarget;
+            FaceTarget(closestEnemy);
+            return;
+        }
+
         Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 25);
 
         float closestDistance = Mathf.Infinity;
@@ -110,11 +158,13 @@ public class Shadow_Skill_Controller : MonoBehaviour
             }
         }
 
-        if(closestEnemy != null)
-        {
-            if (transform.position.x > closestEnemy.position.x)
-                transform.Rotate(0, 180, 0);
-        }
+        FaceTarget(closestEnemy);
+    }
+
+    private void FaceTarget(Transform target)
+    {
+        if (target != null && transform.position.x > target.position.x)
+            transform.Rotate(0, 180, 0);
 
     }
 

@@ -44,6 +44,13 @@ public class Oath_Skill : Skill
 
     public void ConfigureTutorialSequence(params ElementType[] elements)
     {
+        if (tutorialEnchantCoroutine != null)
+        {
+            StopCoroutine(tutorialEnchantCoroutine);
+            tutorialEnchantCoroutine = null;
+        }
+        RemoveTutorialEnchantment();
+
         tutorialSequence.Clear();
         foreach (ElementType element in elements)
             tutorialSequence.Enqueue(element);

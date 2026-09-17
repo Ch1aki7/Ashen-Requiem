@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -37,6 +39,11 @@ public class TutorialGuide : MonoBehaviour
         ElementType.Fire, ElementType.Ice, ElementType.Lightning
     };
 
+    private readonly float[] blackholeSpawnOffsets = { -5f, 5f, -2.75f, 2.75f, -6.5f, 6.5f };
+    private readonly List<GameObject> spawnedBlackholeTargets = new List<GameObject>();
+    private GameObject skeletonTemplate;
+    private bool blackholeTargetsSpawned;
+
     private int step;
     private float startingX;
     private bool jumped;
@@ -53,6 +60,8 @@ public class TutorialGuide : MonoBehaviour
     private TMP_Text instructionText;
     private TMP_Text progressText;
     private Image progressFill;
+    private Button previousButton;
+    private Button nextButton;
 
     private void Awake()
     {
@@ -65,6 +74,7 @@ public class TutorialGuide : MonoBehaviour
 
         startingX = player.transform.position.x;
         player.GOD = true;
+        CreateSkeletonTemplate();
         CreateOverlay();
         ShowStep();
     }
@@ -73,6 +83,18 @@ public class TutorialGuide : MonoBehaviour
     {
         if (step < 7)
             player.GOD = true;
+
+        if (Input.GetKeyDown(KeyCode.PageUp))
+        {
+            ChangeStep(-1);
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.PageDown))
+        {
+            ChangeStep(1);
+            return;
+        }
 
         if (Input.GetKeyDown(KeyCode.Backspace) || (step == 7 && Input.GetKeyDown(KeyCode.Return)))
         {
@@ -195,6 +217,7 @@ public class TutorialGuide : MonoBehaviour
                     else
                     {
                         combatPhase = CombatPhase.BlackholeReady;
+                        SpawnBlackholeTargets();
                     }
                     ShowCombatInstruction();
                 }
@@ -242,7 +265,7 @@ public class TutorialGuide : MonoBehaviour
                     ElementDescription(tutorialElements[elementIndex]));
                 break;
             case CombatPhase.BlackholeReady:
-                SetCombatText("黑洞", "按 R 升空并释放黑洞。黑洞会冻结范围内的敌人，并在目标上方生成按键提示。");
+                SetCombatText("黑洞", "场地中已出现额外骷髅。站在敌群中间按 R 升空并释放黑洞；黑洞会冻结范围内的敌人，并在每个目标上方生成按键提示。");
                 break;
             case CombatPhase.BlackholeActive:
                 SetCombatText("黑洞", "观察敌人上方的按键并按下它，将目标加入影袭列表；再按 R 开始连续影子攻击。黑洞出现约 1 秒后，可按 Space 主动收束并退出。");
@@ -283,27 +306,128 @@ public class TutorialGuide : MonoBehaviour
     {
         titleText.text = "07  实战 · " + subtitle;
         instructionText.text = body;
-        progressText.text = "引导  7 / 7     ·     Backspace 重来";
+        progressText.text = "引导  7 / 7     ·     PageUp 上一步     PageDown 下一步     Backspace 重来";
         progressFill.fillAmount = 1f;
     }
 
     private void Advance()
     {
-        step++;
+        SetStep(step + 1);
+    }
+
+    private void ChangeStep(int offset)
+    {
+        SetStep(step + offset);
+    }
+
+    private void SetStep(int targetStep)
+    {
+        int clampedStep = Mathf.Clamp(targetStep, 0, titles.Length - 1);
+        if (clampedStep == step)
+            return;
+
+        step = clampedStep;
+        ResetStepProgress();
         ShowStep();
+    }
+
+    private void ResetStepProgress()
+    {
+        CleanupBlackholeTargets();
+        startingX = player.transform.position.x;
+        jumped = false;
+        wallSlideSeen = false;
+        openedTree = false;
+        combatPrepared = false;
+        combatPhase = CombatPhase.IaiReady;
+        elementIndex = 0;
+        observedEnchantUses = 0;
+        burstCountBeforeEnchant = 0;
+        oath = null;
+    }
+
+    private void CreateSkeletonTemplate()
+    {
+        skeletonTemplate = Instantiate(enemy.gameObject);
+        skeletonTemplate.name = "Tutorial Skeleton Template";
+        skeletonTemplate.SetActive(false);
+    }
+
+    private void SpawnBlackholeTargets()
+    {
+        if (blackholeTargetsSpawned || skeletonTemplate == null)
+            return;
+
+        blackholeTargetsSpawned = true;
+        const int targetCount = 3;
+        const float minimumDistanceFromMainEnemy = 1.5f;
+        int groundMask = LayerMask.GetMask("Ground");
+        CapsuleCollider2D templateCollider = skeletonTemplate.GetComponent<CapsuleCollider2D>();
+        float feetHeight = templateCollider != null
+            ? templateCollider.size.y * 0.5f - templateCollider.offset.y
+            : 1f;
+
+        foreach (float offset in blackholeSpawnOffsets)
+        {
+            if (spawnedBlackholeTargets.Count >= targetCount)
+                break;
+
+            float spawnX = player.transform.position.x + offset;
+            if (Mathf.Abs(spawnX - enemy.transform.position.x) < minimumDistanceFromMainEnemy)
+                continue;
+
+            float rayOriginY = Mathf.Max(player.transform.position.y, enemy.transform.position.y) + 6f;
+            RaycastHit2D groundHit = Physics2D.Raycast(
+                new Vector2(spawnX, rayOriginY), Vector2.down, 20f, groundMask);
+            float spawnY = groundHit.collider != null
+                ? groundHit.point.y + feetHeight
+                : enemy.transform.position.y;
+
+            GameObject spawned = Instantiate(skeletonTemplate,
+                new Vector3(spawnX, spawnY, enemy.transform.position.z), Quaternion.identity);
+            spawned.name = $"Blackhole Tutorial Skeleton {spawnedBlackholeTargets.Count + 1}";
+            spawned.SetActive(true);
+            spawnedBlackholeTargets.Add(spawned);
+            StartCoroutine(FreezeSpawnedTargetAfterInitialization(spawned.GetComponent<Enemy_Skeleton>()));
+        }
+    }
+
+    private IEnumerator FreezeSpawnedTargetAfterInitialization(Enemy_Skeleton target)
+    {
+        yield return null;
+
+        if (target != null)
+            target.FreezeTime(true);
+    }
+
+    private void CleanupBlackholeTargets()
+    {
+        foreach (GameObject target in spawnedBlackholeTargets)
+        {
+            if (target != null)
+                Destroy(target);
+        }
+
+        spawnedBlackholeTargets.Clear();
+        blackholeTargetsSpawned = false;
     }
 
     private void ShowStep()
     {
         titleText.text = $"{step + 1:00}  {titles[step]}";
         instructionText.text = instructions[step];
-        progressText.text = step < 7 ? $"引导  {step + 1} / 7     ·     Backspace 重来" : "引导完成     ·     Enter 重玩";
+        progressText.text = step < 7
+            ? $"引导  {step + 1} / 7     ·     PageUp 上一步     PageDown 下一步     Backspace 重来"
+            : "引导完成     ·     PageUp 上一步     Enter 重玩";
         progressFill.fillAmount = Mathf.Clamp01((step + 1f) / 7f);
+        previousButton.interactable = step > 0;
+        nextButton.interactable = step < titles.Length - 1;
     }
 
     private void CreateOverlay()
     {
-        GameObject canvasObject = new GameObject("Tutorial UI", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+        GameObject canvasObject = new GameObject("Tutorial UI", typeof(RectTransform), typeof(Canvas),
+            typeof(CanvasScaler), typeof(GraphicRaycaster));
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
@@ -317,7 +441,7 @@ public class TutorialGuide : MonoBehaviour
         panel.anchorMax = new Vector2(0.5f, 1f);
         panel.pivot = new Vector2(0.5f, 1f);
         panel.anchoredPosition = new Vector2(0f, -32f);
-        panel.sizeDelta = new Vector2(1080f, 255f);
+        panel.sizeDelta = new Vector2(1080f, 305f);
         Image background = panel.gameObject.AddComponent<Image>();
         background.color = new Color(0.055f, 0.065f, 0.085f, 0.94f);
         background.raycastTarget = false;
@@ -326,14 +450,19 @@ public class TutorialGuide : MonoBehaviour
             new Color(1f, 0.83f, 0.48f));
         instructionText = CreateText("Instruction", panel, new Vector2(0f, -61f), new Vector2(1000f, 125f), 27f,
             Color.white);
-        progressText = CreateText("Progress", panel, new Vector2(0f, -194f), new Vector2(1000f, 34f), 22f,
+        previousButton = CreateNavigationButton("Previous", panel, "上一步  PageUp", new Vector2(-390f, -190f));
+        previousButton.onClick.AddListener(() => ChangeStep(-1));
+        nextButton = CreateNavigationButton("Next", panel, "下一步  PageDown", new Vector2(390f, -190f));
+        nextButton.onClick.AddListener(() => ChangeStep(1));
+
+        progressText = CreateText("Progress", panel, new Vector2(0f, -239f), new Vector2(1000f, 34f), 20f,
             new Color(0.72f, 0.8f, 0.84f));
 
         RectTransform track = CreateRect("Progress track", panel);
         track.anchorMin = new Vector2(0.5f, 1f);
         track.anchorMax = new Vector2(0.5f, 1f);
         track.pivot = new Vector2(0.5f, 1f);
-        track.anchoredPosition = new Vector2(0f, -241f);
+        track.anchoredPosition = new Vector2(0f, -291f);
         track.sizeDelta = new Vector2(1000f, 5f);
         Image trackImage = track.gameObject.AddComponent<Image>();
         trackImage.color = new Color(0.28f, 0.31f, 0.33f);
@@ -349,6 +478,32 @@ public class TutorialGuide : MonoBehaviour
         progressFill.type = Image.Type.Filled;
         progressFill.fillMethod = Image.FillMethod.Horizontal;
         progressFill.raycastTarget = false;
+    }
+
+    private Button CreateNavigationButton(string objectName, Transform parent, string labelText, Vector2 position)
+    {
+        RectTransform rect = CreateRect(objectName, parent);
+        rect.anchorMin = new Vector2(0.5f, 1f);
+        rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = new Vector2(230f, 40f);
+
+        Image image = rect.gameObject.AddComponent<Image>();
+        image.color = new Color(0.18f, 0.22f, 0.29f, 0.98f);
+
+        Button button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = image;
+        ColorBlock colors = button.colors;
+        colors.highlightedColor = new Color(0.3f, 0.37f, 0.48f, 1f);
+        colors.pressedColor = new Color(0.95f, 0.65f, 0.28f, 1f);
+        colors.disabledColor = new Color(0.12f, 0.13f, 0.16f, 0.55f);
+        button.colors = colors;
+
+        TMP_Text label = CreateText("Label", rect, new Vector2(0f, -3f), new Vector2(220f, 34f), 21f, Color.white);
+        label.text = labelText;
+        label.textWrappingMode = TextWrappingModes.NoWrap;
+        return button;
     }
 
     private static RectTransform CreateRect(string objectName, Transform parent)

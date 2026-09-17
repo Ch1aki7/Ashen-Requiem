@@ -9,6 +9,7 @@ public class Blackhole_Key_Controller : MonoBehaviour
 
     private Transform enemy;
     private Blackhole_Skill_Controller blackhole;
+    private bool selected;
     public void SetupKey(KeyCode _mNewKey,Transform _mEnemy,Blackhole_Skill_Controller _mBlackhole)
     {
         sr=GetComponent<SpriteRenderer>();
@@ -23,8 +24,9 @@ public class Blackhole_Key_Controller : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(mKey))
+        if (!selected && Input.GetKeyDown(mKey))
         {
+            selected = true;
             blackhole.AddEnemyToList(enemy);
 
             mText.color= Color.clear;

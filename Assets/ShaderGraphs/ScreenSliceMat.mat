@@ -37,11 +37,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _ChromaticAberration: 1.1
     - _EdgeWidth: 0.005
-    - _SliceAngle: 30
+    - _EffectStrength: 0
+    - _FractureWidth: 0.007
+    - _SliceAngle: 152.88904
+    - _SliceSeed: 129.39334
     m_Colors:
     - _EdgeGlowColor: {r: 0, g: 0, b: 0, a: 1}
-    - _SliceCenter: {r: 0.9574413, g: 0.7851711, b: 0, a: 0}
-    - _SliceOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _Jitter: {r: -0, g: -0, b: 0, a: 0}
+    - _SliceCenter: {r: 0.24381626, g: 0.39740822, b: 0, a: 0}
+    - _SliceOffset: {r: -0, g: -0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
