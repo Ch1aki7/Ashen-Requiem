@@ -4109,3 +4109,311 @@ promt合集
 
 ![image-20260324103612422](Ashen Requiem State Machine Ver. Developing Log.assets/image-20260324103612422.png)
 
+## 音频设计
+
+### 火将燃起
+
+Iron Will Uprising
+
+废土风，灾变，半机械，烈焰
+
+```
+[Verse 1]
+Scar on my knuckles
+Blood on my tongue
+I’ve tasted the pavement
+Now I’m still not done
+Teeth in the pressure
+Fire in my chest
+You’re betting I’ll break here
+I’m betting the rest
+
+[Pre-Chorus]
+You built your throne
+Out of fear and stone
+I carved my name
+Into broken bones (yeah)
+
+[Chorus]
+This is my war cry, hear me now
+I won’t back down, I won’t bow
+I take the hit and I stand up higher
+Turn every wound into wildfire
+I’m breaking through your loaded dice
+Cut your empire down to size
+This is my war cry, loud and wired
+Iron will uprising, fueled by fire (hey!)
+
+[Verse 2]
+Laugh at my damage
+Count every scar
+I sharpen my anger
+Like a falling star
+You tighten the collar
+I sharpen the blade
+You call it an order
+I call it a cage
+
+[Pre-Chorus]
+You drew the line
+Thought I’d toe it fine
+I cross that mark
+Like it’s just a sign (woah)
+
+[Chorus]
+This is my war cry, hear me now
+I won’t back down, I won’t bow
+I take the hit and I stand up higher
+Turn every wound into wildfire
+I’m breaking through your loaded dice
+Cut your empire down to size
+This is my war cry, loud and wired
+Iron will uprising, fueled by fire
+
+[Bridge]
+[Drums and guitars lock into a rapid, stuttering pattern under shouted vocals]
+(Go)
+Rise up, rise up
+Hands to the sky, now
+Rise up, rise up
+Dare me to lie down
+Rise up, rise up
+Burn through the blackout
+Rise up, rise up
+Hear how we shout out (hey!)
+
+[Chorus]
+This is my war cry, hear me now
+I won’t back down, I won’t bow
+I take the hit and I stand up higher
+Turn every wound into wildfire
+I’m breaking through your loaded dice
+Cut your empire down to size
+This is my war cry, loud and wired
+Iron will uprising, fueled by fire
+```
+
+### 仪式长阶
+
+神性，渐强，节奏，拉开序幕
+
+### 审判
+
+神性，力量，不可回避
+
+### 天鹅绒之幻
+
+迷幻，沉沦，奢靡感
+
+### 恶魔颔首
+
+The Devil Takes a Bow
+
+```
+[Verse 1]
+Velvet curtain
+Crimson wine
+Every sin
+A borrowed time
+Silver dagger
+Sugar tongue
+Pick your poison
+I’ve begun
+
+Watch the candles
+Drip and grin
+Every drop
+A little sin
+Name your price now
+Say it slow
+You’re the spark
+I’m the glow (ha)
+
+[Chorus]
+Welcome to my little show
+Where the Devil takes a bow so low
+Sign your name in a glass of gold
+Sip it down, feel your halo sold
+Spin and sway to the undertow
+While the Devil takes a bow so slow
+Every wish has a wicked toll
+And I cash it in, heart and soul (oh yeah)
+
+[Verse 2]
+Silk and ashes
+On your skin
+Hear the choir
+Calling you in
+Paper angels
+Fold and burn
+Every favor
+Twists and turns
+
+Smile wider
+Play your part
+Cross my palm
+Expose your heart
+You keep secrets
+Very well
+I keep keys
+To your cell (hm)
+
+[Chorus]
+Welcome to my little show
+Where the Devil takes a bow so low
+Sign your name in a glass of gold
+Sip it down, feel your halo sold
+Spin and sway to the undertow
+While the Devil takes a bow so slow
+Every wish has a wicked toll
+And I cash it in, heart and soul (ahh)
+
+[Bridge]
+Step
+By step
+Down the stairs you go
+Left
+Then right
+To the end of the row
+One
+Last breath
+On the edge of the flame
+Say
+My name
+Say my name (say my name)
+
+[Chorus]
+Welcome to my little show
+Where the Devil takes a bow so low
+Clap your hands as the curtains close
+You’re the punchline nobody knows
+Spin and sway to the undertow
+While the Devil takes a bow so slow
+In the dark where the bargains grow
+You’re the crown on my shadowed throne
+```
+
+### 门扉背后
+
+优雅渗透 + 社交伪装 + 无声掠夺
+
+```
+[Verse 1]
+Silver on the windowsill
+Keys asleep inside the bowl
+Name on every watchlist
+Still you never see me go
+
+Soft soles on a marble floor
+Laughing at the guarding eyes
+Hands behind my back like
+I would never touch your prize (mm)
+
+[Chorus]
+I’m the queen of quiet doors
+Slip the lock and shape the story
+You don’t miss it till it’s gone
+By then I’m already morning
+I can steal the room, the room
+Just by turning toward the light
+Smile like I belong here
+Take your secrets in the night (shh)
+
+[Verse 2]
+Small talk at the gala stairs
+Glass raised high, my glance stays low
+Compliments like playing cards
+Stacked so only I can know
+
+You feel safe when I lean close
+Trading whispers, trading sins
+You don’t sense the weight has moved
+Till you feel the air grow thin
+
+[Chorus]
+I’m the queen of quiet doors
+Slip the lock and shape the story
+You don’t miss it till it’s gone
+By then I’m already morning
+I can steal the room, the room
+Just by turning toward the light
+Smile like I belong here
+Take your secrets in the night
+
+[Bridge]
+Every shadow wears my face
+Every rumor knows my name (oh)
+Trust is just a passageway
+Built for me to rearrange
+
+[Chorus]
+I’m the queen of quiet doors
+Slip the lock and shape the story
+You don’t miss it till it’s gone
+By then I’m already morning
+I can steal the room, the room
+Just by turning toward the light
+Smile like I belong here
+Leave you reaching for the night
+```
+
+### 空洞命运之门
+
+主题曲
+
+### 地图音乐
+
+ **轻史诗、探索、柔和、空间感、安静但有世界感**
+
+Light Over Far Horizons
+
+------
+
+#### 🌲 2️⃣ 自然世界·治愈探索风
+
+偏自然系地图音乐，有轻微的温暖感。
+ 使用木管乐器、轻钢琴和简单弦乐织体。
+ 节奏缓慢，像风吹过森林或草原的感觉。
+ 整体没有强情绪，偏舒缓与沉浸。
+
+关键词：
+ **自然、治愈、轻松、风景感、宁静**
+
+------
+
+#### 遗弃的回声
+
+ **压抑、低频、废墟感、暗黑、氛围、克制**
+
+Abandoned Echoes
+
+------
+
+#### 🏰 4️⃣ 古遗迹·神秘史诗风
+
+用于城堡、遗迹、地下世界等地图。
+ 以缓慢弦乐、空灵合唱和轻微打击乐构成。
+ 带一点“古老文明残留”的神秘感，但不强调情绪爆发。
+ 更像世界背景在低声呼吸。
+
+关键词：
+ **古老、神秘、遗迹、史诗感、安静宏大**
+
+------
+
+#### 🌌 5️⃣ 虚空世界·极简氛围风
+
+极简音乐设计，用于特殊地图或异空间。
+ 大量空间残响、延迟钢琴、低频Drone音。
+ 几乎没有节奏，强调“空”和“远”。
+ 让玩家感觉进入非现实区域。
+
+关键词：
+ **虚空、极简、漂浮感、未知、空无**
+
+#### 宿命回响
+
+Fate Echoes
+
+#### 进战音乐
+
